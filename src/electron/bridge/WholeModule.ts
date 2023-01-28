@@ -1,4 +1,4 @@
-import { BridgeDef } from '.';
+import { BridgeDef } from './declaration';
 export interface TemplateNameBaseModule extends BridgeDef.BridgeBaseModule {
     templateName: () => string;
 }
