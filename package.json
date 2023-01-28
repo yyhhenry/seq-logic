@@ -1,0 +1,57 @@
+{
+  "name": "electron-builder-pnpm-template",
+  "version": "1.0.0",
+  "description": "Electron Builder Pnpm Template",
+  "main": "dist/main.js",
+  "scripts": {
+    "fn:vue-dev": "vite --port 3000",
+    "fn:electron-dev": "cross-env ELECTRON_DISABLE_SECURITY_WARNINGS=true MODE='development' electron .",
+    "fn:app-parallel-dev": "run-p fn:vue-dev fn:electron-dev",
+    "fn:vite-compile": "vue-tsc --noEmit",
+    "fn:vite-build-only": "vite build",
+    "fn:electron-compile": "tsc --outDir dist -p src/electron/tsconfig.json",
+    "fn:electron-package": "electron-builder --win",
+    "fn:electron-build": "run-s fn:electron-compile fn:electron-package",
+    "fn:vite-build": "run-s fn:vite-compile fn:vite-build-only",
+    "preload-recompile": "run-s fn:electron-compile",
+    "app-dev": "run-s fn:electron-compile fn:app-parallel-dev",
+    "app-build": "run-s fn:vite-build fn:electron-build"
+  },
+  "build": {
+    "productName": "Electron Builder Pnpm Template",
+    "files": [
+      "dist",
+      "resources"
+    ],
+    "directories": {
+      "output": "electron-dist"
+    },
+    "win": {
+      "icon": "resources/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "keywords": [],
+  "author": "yyhhenry",
+  "license": "ISC",
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.0.10",
+    "element-plus": "^2.2.28",
+    "sass": "^1.57.1",
+    "vue": "^3.2.45"
+  },
+  "devDependencies": {
+    "electron": "^22.1.0",
+    "@types/node": "^18.11.18",
+    "@vitejs/plugin-vue": "^4.0.0",
+    "cross-env": "^7.0.3",
+    "electron-builder": "^23.6.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "5.0.0-dev.20230127",
+    "vite": "^4.0.4",
+    "vue-tsc": "^1.0.24"
+  }
+}

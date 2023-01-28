@@ -1,0 +1,14 @@
+{
+  "files": ["vite.config.ts"],
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "module": "ESNext",
+    "types": ["node"],
+    "esModuleInterop": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  }
+}

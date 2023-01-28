@@ -1,0 +1,15 @@
+{
+  "include": ["**/*.ts"],
+  "compilerOptions": {
+    "rootDir": ".",
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "types": ["node"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  }
+}
