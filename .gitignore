@@ -1,4 +1,3 @@
 /electron-dist
 /node_modules
 /dist 
-!/electron-dist/*.exe
