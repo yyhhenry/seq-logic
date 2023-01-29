@@ -1,12 +1,13 @@
 import type { IpcMainInvokeEvent } from 'electron';
 export namespace BridgeDef {
     export type BridgeValue =
+        | undefined
         | string
         | number
         | BridgeValue[]
         | { [Key in string]: BridgeValue };
 
-    export type BridgeBaseFunction = (...args: BridgeValue[]) => BridgeValue;
+    export type BridgeBaseFunction = (...args: any[]) => BridgeValue;
     export type BridgeHandler<T extends BridgeBaseFunction> = T extends (
         ...args: infer Args
     ) => infer Ret
