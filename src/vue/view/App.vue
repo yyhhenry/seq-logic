@@ -8,7 +8,6 @@ remote.templateName.templateName().then(value => (content.value = value));
 const filePaths = ref<string[]>([]);
 const openFileClick = async () => {
   const desktopPath = await remote.dialog.getPath('desktop');
-  console.log(desktopPath);
   const newFilePaths = await remote.dialog.openFile({
     title: '随便打开吧',
     filters: [
