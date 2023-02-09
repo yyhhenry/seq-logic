@@ -12,7 +12,7 @@ import TitleView from './TitleView.vue';
 import { remote } from '@/remote';
 import { ref, watch } from 'vue';
 import { readableSize } from '@/util/readableSize';
-const templateName = await remote.templateName.templateName();
+const templateName = await remote.content.templateName();
 const documentsPath = await remote.fs.getPath('documents');
 const filePaths = ref<string[]>([]);
 const fileSizes = ref<string[]>([]);

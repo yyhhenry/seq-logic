@@ -1,6 +1,6 @@
 import type { BridgeDef } from './declaration';
 import type { OpenDialogOptions, app } from 'electron';
-export interface TemplateNameBaseModule extends BridgeDef.BridgeBaseModule {
+export interface ContentBaseModule extends BridgeDef.BridgeBaseModule {
     templateName: () => string;
 }
 export interface FileSystemBaseModule extends BridgeDef.BridgeBaseModule {
@@ -11,7 +11,7 @@ export interface FileSystemBaseModule extends BridgeDef.BridgeBaseModule {
     openFile: (option: OpenDialogOptions) => string[] | undefined;
 }
 export interface WholeBase extends BridgeDef.BridgeWholeBase {
-    templateName: TemplateNameBaseModule;
+    content: ContentBaseModule;
     fs: FileSystemBaseModule;
 }
 export type WholeHandler = BridgeDef.BridgeWholeHandler<WholeBase>;

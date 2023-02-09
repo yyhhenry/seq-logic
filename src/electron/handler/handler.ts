@@ -1,7 +1,7 @@
 import type { WholeHandler } from '../bridge';
-import { app, dialog as electronDialog } from 'electron';
+import { app, dialog } from 'electron';
 import nodeFS from 'fs/promises';
-const templateName: WholeHandler['templateName'] = {
+const content: WholeHandler['content'] = {
     templateName: async () =>
         `Electron Builder Pnpm Template - ${process.platform}`,
 };
@@ -10,7 +10,7 @@ const fs: WholeHandler['fs'] = {
         return app.getPath(name);
     },
     openFile: async (_event, option) => {
-        const result = await electronDialog.showOpenDialog(option);
+        const result = await dialog.showOpenDialog(option);
         return result.canceled ? undefined : result.filePaths;
     },
     readFile: async (_event, pathname) => {
@@ -24,6 +24,6 @@ const fs: WholeHandler['fs'] = {
     },
 };
 export const wholeHandler: WholeHandler = {
-    templateName,
+    content,
     fs,
 };
