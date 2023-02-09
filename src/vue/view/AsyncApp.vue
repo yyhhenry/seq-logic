@@ -11,22 +11,11 @@ import {
 import TitleView from './TitleView.vue';
 import { remote } from '@/remote';
 import { ref, watch } from 'vue';
+import { readableSize } from '@/util/readableSize';
 const templateName = await remote.templateName.templateName();
 const documentsPath = await remote.fs.getPath('documents');
 const filePaths = ref<string[]>([]);
 const fileSizes = ref<string[]>([]);
-const readableSize = (size: number) => {
-  const block = 1024;
-  if (size < block) {
-    return `${size}B`;
-  } else if (size / block < block) {
-    return `${(size / 1024).toFixed(1)}KiB`;
-  } else if (size / block ** 2 < block) {
-    return `${(size / block ** 2).toFixed(1)}MiB`;
-  } else {
-    return `${(size / block ** 3).toFixed(1)}GiB`;
-  }
-};
 watch(filePaths, async () => {
   fileSizes.value = (
     await Promise.all(
