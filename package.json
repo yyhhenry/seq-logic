@@ -29,6 +29,10 @@
     "win": {
       "icon": "resources/icon.png"
     },
+    "linux": {
+      "icon": "resources/icon.png",
+      "category": "Development"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
