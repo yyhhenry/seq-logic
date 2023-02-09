@@ -10,7 +10,7 @@
     "fn:vite-compile": "vue-tsc --noEmit",
     "fn:vite-build-only": "vite build",
     "fn:electron-compile": "tsc --outDir dist -p src/electron/tsconfig.json",
-    "fn:electron-package": "electron-builder --win",
+    "fn:electron-package": "electron-builder",
     "fn:electron-build": "run-s fn:electron-compile fn:electron-package",
     "fn:vite-build": "run-s fn:vite-compile fn:vite-build-only",
     "preload-recompile": "run-s fn:electron-compile",
