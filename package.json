@@ -30,6 +30,7 @@
       "icon": "resources/icon.png"
     },
     "linux": {
+      "target": "snap",
       "icon": "resources/icon.png",
       "category": "Development"
     },
