@@ -12,6 +12,6 @@ export const handleModule = async <T extends BridgeDef.BridgeBaseModule>(
 export const handleWholeModule = async (whole: WholeHandler) => {
     await app.whenReady();
     for (const [key, value] of Object.entries(whole)) {
-        handleModule(key, value);
+        await handleModule(key, value);
     }
 };
