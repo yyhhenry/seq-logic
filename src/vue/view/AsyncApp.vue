@@ -1,22 +1,52 @@
 <script setup lang="ts">
-import { ElButton, ElCard, ElContainer, ElHeader, ElMain } from 'element-plus';
+import {
+  ElButton,
+  ElCard,
+  ElContainer,
+  ElHeader,
+  ElMain,
+  ElRow,
+  ElCol,
+} from 'element-plus';
 import TitleView from './TitleView.vue';
 import { remote } from '@/remote';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 const templateName = await remote.templateName.templateName();
+const documentsPath = await remote.fs.getPath('documents');
 const filePaths = ref<string[]>([]);
-const exePath = await remote.dialog.getPath('exe');
+const fileSizes = ref<string[]>([]);
+const readableSize = (size: number) => {
+  const block = 1024;
+  if (size < block) {
+    return `${size}B`;
+  } else if (size / block < block) {
+    return `${(size / 1024).toFixed(1)}KiB`;
+  } else if (size / block ** 2 < block) {
+    return `${(size / block ** 2).toFixed(1)}MiB`;
+  } else {
+    return `${(size / block ** 3).toFixed(1)}GiB`;
+  }
+};
+watch(filePaths, async () => {
+  fileSizes.value = (
+    await Promise.all(
+      filePaths.value.map(pathname => remote.fs.getFileSize(pathname))
+    )
+  ).map(size => readableSize(size));
+});
 const openFileClick = async () => {
-  const newFilePaths = await remote.dialog.openFile({
+  const newFilePaths = await remote.fs.openFile({
     title: '随便打开吧',
     filters: [
       { extensions: ['txt'], name: '文本文件' },
       { extensions: ['*'], name: '所有文件' },
     ],
-    defaultPath: exePath,
+    defaultPath: documentsPath,
     properties: ['openFile', 'multiSelections'],
   });
-  filePaths.value = newFilePaths;
+  if (newFilePaths !== undefined) {
+    filePaths.value = newFilePaths;
+  }
 };
 </script>
 <template>
@@ -27,11 +57,19 @@ const openFileClick = async () => {
     </ElHeader>
     <ElMain>
       <ElCard style="margin: 10px">
-        <p>
-          <span>{{ 'File Opened: ' }}</span>
-          <span>{{ JSON.stringify(filePaths) }}</span>
-        </p>
-        <ElButton @click="openFileClick">Open File</ElButton>
+        <template #header>
+          <ElButton @click="openFileClick">Open File</ElButton>
+        </template>
+        <ElRow>
+          <ElCol :span="24" v-if="filePaths.length !== 0"> File Opened: </ElCol>
+          <ElCol :span="24" v-else> 暂无已经打开的项 </ElCol>
+          <ElCol :span="24" v-for="[index, filePath] of filePaths.entries()">
+            <span style="display: inline-block">{{ filePath }}</span>
+            <span style="margin-left: 5px" class="user-select-none">
+              {{ `(size: ${fileSizes[index]})` }}
+            </span>
+          </ElCol>
+        </ElRow>
       </ElCard>
     </ElMain>
   </ElContainer>
@@ -42,5 +80,8 @@ const openFileClick = async () => {
   align-items: center;
   background-color: rgb(68, 132, 229);
   color: white;
+}
+.user-select-none {
+  user-select: none;
 }
 </style>

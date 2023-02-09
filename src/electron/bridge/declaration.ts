@@ -4,6 +4,8 @@ export namespace BridgeDef {
         | undefined
         | string
         | number
+        | bigint
+        | boolean
         | BridgeValue[]
         | { [Key in string]: BridgeValue };
 

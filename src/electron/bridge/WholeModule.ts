@@ -3,13 +3,16 @@ import type { OpenDialogOptions, app } from 'electron';
 export interface TemplateNameBaseModule extends BridgeDef.BridgeBaseModule {
     templateName: () => string;
 }
-export interface DialogBaseModule extends BridgeDef.BridgeBaseModule {
+export interface FileSystemBaseModule extends BridgeDef.BridgeBaseModule {
     getPath: typeof app.getPath;
-    openFile: (option: OpenDialogOptions) => string[];
+    readFile: (pathname: string) => string;
+    readDir: (pathname: string) => string[];
+    getFileSize: (pathname: string) => number;
+    openFile: (option: OpenDialogOptions) => string[] | undefined;
 }
 export interface WholeBase extends BridgeDef.BridgeWholeBase {
     templateName: TemplateNameBaseModule;
-    dialog: DialogBaseModule;
+    fs: FileSystemBaseModule;
 }
 export type WholeHandler = BridgeDef.BridgeWholeHandler<WholeBase>;
 export type WholeRemote = BridgeDef.BridgeWholeRemote<WholeBase>;
