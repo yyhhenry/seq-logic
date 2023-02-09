@@ -53,7 +53,13 @@ const openFileClick = async () => {
   <TitleView :title="templateName" />
   <ElContainer>
     <ElHeader class="header">
-      <h1>{{ templateName }}</h1>
+      <h1>
+        <span> {{ templateName }} </span>
+        <span style="margin-left: 10px">
+          <span>By </span>
+          <img style="height: 1em" src="/icon.png" />
+        </span>
+      </h1>
     </ElHeader>
     <ElMain>
       <ElCard style="margin: 10px">
