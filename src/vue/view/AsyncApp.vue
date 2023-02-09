@@ -56,7 +56,9 @@ const openFileClick = async () => {
       <h1>
         <span> {{ templateName }} </span>
         <span style="margin-left: 10px">
-          <span>By </span>
+          <span style="font-family: fantasy">
+            {{ 'Powered By ' }}
+          </span>
           <img style="height: 1em" src="/icon.png" />
         </span>
       </h1>
