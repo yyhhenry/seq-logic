@@ -30,3 +30,5 @@ snap安装方式
 snap install --dangerous electron-builder-pnpm-template_1.0.0_amd64.snap
 
 ```
+
+直接执行unpack文件夹下的可执行文件可能遇到有关硬件加速的问题，使用snap安装后解决
