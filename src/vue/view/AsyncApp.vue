@@ -42,7 +42,7 @@ const openFileClick = async () => {
   <TitleView :title="templateName" />
   <ElContainer>
     <ElHeader class="header">
-      <h1>
+      <h1 class="user-select-none">
         <span> {{ templateName }} </span>
         <span style="margin-left: 10px">
           <span style="font-family: fantasy">
@@ -58,10 +58,18 @@ const openFileClick = async () => {
           <ElButton @click="openFileClick">Open File</ElButton>
         </template>
         <ElRow>
-          <ElCol :span="24" v-if="filePaths.length !== 0"> File Opened: </ElCol>
-          <ElCol :span="24" v-else> 暂无已经打开的项 </ElCol>
+          <ElCol
+            :span="24"
+            class="user-select-none"
+            v-if="filePaths.length !== 0"
+          >
+            File Opened:
+          </ElCol>
+          <ElCol :span="24" class="user-select-none" v-else>
+            暂无已经打开的项
+          </ElCol>
           <ElCol :span="24" v-for="[index, filePath] of filePaths.entries()">
-            <span style="display: inline-block">{{ filePath }}</span>
+            <span>{{ filePath }}</span>
             <span style="margin-left: 5px" class="user-select-none">
               {{ `(size: ${fileSizes[index]})` }}
             </span>
