@@ -13,6 +13,7 @@ import { remote } from '@/remote';
 import { ref, watch } from 'vue';
 import { readableSize } from '@/util/readableSize';
 const title = await remote.content.title();
+const uuid = ref(await remote.content.uuid());
 const extraPath = await remote.fs.getPath('extra');
 const filePaths = ref<string[]>([]);
 const fileSizes = ref<string[]>([]);
@@ -35,6 +36,7 @@ const openFileClick = async () => {
   });
   if (newFilePaths !== undefined) {
     filePaths.value = newFilePaths;
+    uuid.value = await remote.content.uuid();
   }
 };
 </script>
@@ -45,7 +47,7 @@ const openFileClick = async () => {
       <h1 class="user-select-none">
         <span> {{ title }} </span>
         <span style="margin-left: 10px">
-          <span style="font-style: italic;">
+          <span style="font-style: italic">
             {{ 'Powered By ' }}
           </span>
           <img style="height: 1em" src="/icon.png" />
@@ -58,6 +60,9 @@ const openFileClick = async () => {
           <ElButton @click="openFileClick">Open File</ElButton>
         </template>
         <ElRow>
+          <ElCol :span="24" class="user-select-none">{{
+            `(uuid: ${uuid})`
+          }}</ElCol>
           <ElCol
             :span="24"
             class="user-select-none"

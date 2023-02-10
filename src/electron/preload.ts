@@ -17,6 +17,7 @@ const invokerOf = <T extends keyof WholeRemote>(
 };
 const content = invokerOf('content', {
     title: 0,
+    uuid: 0,
 });
 const fs = invokerOf('fs', {
     openFile: 0,

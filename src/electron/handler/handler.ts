@@ -2,16 +2,21 @@ import type { WholeHandler } from '../bridge';
 import { app, dialog } from 'electron';
 import nodeFS from 'fs/promises';
 import path from 'path';
+import { v4 as uuidV4 } from 'uuid';
 import { isDevelopmentMode } from '../isDevelopmentMode';
 const content: WholeHandler['content'] = {
     title: async () => `Electron Builder Pnpm Template - ${process.platform}`,
+    uuid: () => uuidV4(),
 };
 const fs: WholeHandler['fs'] = {
     getPath: (_event, name) => {
         if (name === 'extra') {
-            return isDevelopmentMode
-                ? path.join(__dirname, '../../extraFiles')
-                : path.join(path.dirname(app.getPath('exe')), 'extraFiles');
+            return path.join(
+                isDevelopmentMode
+                    ? process.cwd()
+                    : path.dirname(app.getPath('exe')),
+                'extraFiles'
+            );
         }
         return app.getPath(name);
     },

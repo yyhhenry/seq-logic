@@ -1,7 +1,8 @@
 import type { BridgeDef } from './declaration';
-import type { OpenDialogOptions, app } from 'electron';
+import type { OpenDialogOptions } from 'electron';
 export interface ContentBaseModule extends BridgeDef.BridgeBaseModule {
     title: () => string;
+    uuid: () => string;
 }
 export interface FileSystemBaseModule extends BridgeDef.BridgeBaseModule {
     getPath: (
