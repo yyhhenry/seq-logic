@@ -1,7 +1,7 @@
 import type { BridgeDef } from './declaration';
 import type { OpenDialogOptions, app } from 'electron';
 export interface ContentBaseModule extends BridgeDef.BridgeBaseModule {
-    templateName: () => string;
+    title: () => string;
 }
 export interface FileSystemBaseModule extends BridgeDef.BridgeBaseModule {
     getPath: typeof app.getPath;

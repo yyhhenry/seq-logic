@@ -16,7 +16,7 @@ const invokerOf = <T extends keyof WholeRemote>(
     return result as WholeRemote[T];
 };
 const content = invokerOf('content', {
-    templateName: 0,
+    title: 0,
 });
 const fs = invokerOf('fs', {
     openFile: 0,

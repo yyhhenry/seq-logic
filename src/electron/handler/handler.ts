@@ -2,7 +2,7 @@ import type { WholeHandler } from '../bridge';
 import { app, dialog } from 'electron';
 import nodeFS from 'fs/promises';
 const content: WholeHandler['content'] = {
-    templateName: async () =>
+    title: async () =>
         `Electron Builder Pnpm Template - ${process.platform}`,
 };
 const fs: WholeHandler['fs'] = {

@@ -12,7 +12,7 @@ import TitleView from './TitleView.vue';
 import { remote } from '@/remote';
 import { ref, watch } from 'vue';
 import { readableSize } from '@/util/readableSize';
-const templateName = await remote.content.templateName();
+const title = await remote.content.title();
 const documentsPath = await remote.fs.getPath('documents');
 const filePaths = ref<string[]>([]);
 const fileSizes = ref<string[]>([]);
@@ -39,11 +39,11 @@ const openFileClick = async () => {
 };
 </script>
 <template>
-  <TitleView :title="templateName" />
+  <TitleView :title="title" />
   <ElContainer>
     <ElHeader class="header">
       <h1 class="user-select-none">
-        <span> {{ templateName }} </span>
+        <span> {{ title }} </span>
         <span style="margin-left: 10px">
           <span style="font-style: italic;">
             {{ 'Powered By ' }}
