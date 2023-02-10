@@ -4,11 +4,32 @@ export interface ContentBaseModule extends BridgeDef.BridgeBaseModule {
     title: () => string;
 }
 export interface FileSystemBaseModule extends BridgeDef.BridgeBaseModule {
-    getPath: typeof app.getPath;
+    getPath: (
+        name:
+            | 'extra'
+            | 'home'
+            | 'appData'
+            | 'userData'
+            | 'sessionData'
+            | 'temp'
+            | 'exe'
+            | 'module'
+            | 'desktop'
+            | 'documents'
+            | 'downloads'
+            | 'music'
+            | 'pictures'
+            | 'videos'
+            | 'recent'
+            | 'logs'
+            | 'crashDumps'
+    ) => string;
     readFile: (pathname: string) => string;
     readDir: (pathname: string) => string[];
     getFileSize: (pathname: string) => number;
     openFile: (option: OpenDialogOptions) => string[] | undefined;
+    joinPath: (...args: string[]) => string;
+    resolvePath: (...args: string[]) => string;
 }
 export interface WholeBase extends BridgeDef.BridgeWholeBase {
     content: ContentBaseModule;

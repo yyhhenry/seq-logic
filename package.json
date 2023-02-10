@@ -29,6 +29,12 @@
     "win": {
       "icon": "resources/icon.png"
     },
+    "extraFiles": [
+      {
+        "from": "extraFiles",
+        "to": "extraFiles"
+      }
+    ],
     "linux": {
       "target": "snap",
       "icon": "resources/icon.png",

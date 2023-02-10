@@ -13,7 +13,7 @@ import { remote } from '@/remote';
 import { ref, watch } from 'vue';
 import { readableSize } from '@/util/readableSize';
 const title = await remote.content.title();
-const documentsPath = await remote.fs.getPath('documents');
+const extraPath = await remote.fs.getPath('extra');
 const filePaths = ref<string[]>([]);
 const fileSizes = ref<string[]>([]);
 watch(filePaths, async () => {
@@ -30,7 +30,7 @@ const openFileClick = async () => {
       { extensions: ['txt'], name: '文本文件' },
       { extensions: ['*'], name: '所有文件' },
     ],
-    defaultPath: documentsPath,
+    defaultPath: extraPath,
     properties: ['openFile', 'multiSelections'],
   });
   if (newFilePaths !== undefined) {

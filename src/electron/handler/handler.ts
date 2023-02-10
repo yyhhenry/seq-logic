@@ -1,12 +1,18 @@
 import type { WholeHandler } from '../bridge';
 import { app, dialog } from 'electron';
 import nodeFS from 'fs/promises';
+import path from 'path';
+import { isDevelopmentMode } from '../isDevelopmentMode';
 const content: WholeHandler['content'] = {
-    title: async () =>
-        `Electron Builder Pnpm Template - ${process.platform}`,
+    title: async () => `Electron Builder Pnpm Template - ${process.platform}`,
 };
 const fs: WholeHandler['fs'] = {
     getPath: (_event, name) => {
+        if (name === 'extra') {
+            return isDevelopmentMode
+                ? path.join(__dirname, '../../extraFiles')
+                : path.join(path.dirname(app.getPath('exe')), 'extraFiles');
+        }
         return app.getPath(name);
     },
     openFile: async (_event, option) => {
@@ -21,6 +27,12 @@ const fs: WholeHandler['fs'] = {
     },
     getFileSize: async (_event, pathname) => {
         return (await nodeFS.stat(pathname)).size;
+    },
+    joinPath: async (_event, ...args) => {
+        return path.join(...args);
+    },
+    resolvePath: async (_event, ...args) => {
+        return path.resolve(...args);
     },
 };
 export const wholeHandler: WholeHandler = {

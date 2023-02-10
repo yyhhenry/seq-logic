@@ -24,6 +24,8 @@ const fs = invokerOf('fs', {
     readFile: 0,
     readDir: 0,
     getFileSize: 0,
+    joinPath: 0,
+    resolvePath: 0,
 });
 const remote: WholeRemote = { content, fs };
 contextBridge.exposeInMainWorld('remote', remote);
