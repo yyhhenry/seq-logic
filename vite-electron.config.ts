@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 export default defineConfig({
     build: {
-        emptyOutDir: false,
+        outDir: 'dist/electron',
         target: 'esnext',
         commonjsOptions: {},
         lib: {

@@ -2,7 +2,7 @@
   "name": "electron-builder-pnpm-template",
   "version": "1.0.0",
   "description": "Electron Builder Pnpm Template",
-  "main": "dist/main.js",
+  "main": "dist/electron/main.js",
   "scripts": {
     "fn:vue-dev": "vite --port 3000",
     "fn:electron-dev": "cross-env ELECTRON_DISABLE_SECURITY_WARNINGS=true MODE='development' electron .",

@@ -5,7 +5,7 @@ import { wholeHandler } from './handler/handler';
 import { isDevelopmentMode } from './isDevelopmentMode';
 // 禁用硬件加速的确会导致性能的大幅下降
 // app.disableHardwareAcceleration();
-const mainFolder = __dirname;
+const mainFolder = path.dirname(__dirname);
 const resourcesFolder = path.join(mainFolder, '../resources');
 if (!isDevelopmentMode) {
     Menu.setApplicationMenu(null);
@@ -16,7 +16,7 @@ const createWindow = () => {
         height: 600,
         useContentSize: true,
         webPreferences: {
-            preload: path.join(mainFolder, 'preload.js'),
+            preload: path.join(mainFolder, 'electron/preload.js'),
         },
     });
     if (isDevelopmentMode) {
