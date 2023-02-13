@@ -14,11 +14,23 @@ const createWindow = () => {
     const mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
-        useContentSize: true,
+        minWidth: 800,
+        minHeight: 600,
+        ...(process.platform === 'win32'
+            ? {
+                  titleBarStyle: 'hidden',
+                  titleBarOverlay: {
+                      color: 'rgb(68, 132, 229)',
+                      symbolColor: 'white',
+                  },
+              }
+            : {}),
         webPreferences: {
             preload: path.join(mainFolder, 'electron/preload.js'),
         },
+        show: false,
     });
+    mainWindow.on('ready-to-show', () => mainWindow.show());
     if (isDevelopmentMode) {
         mainWindow.loadURL('http://localhost:3000');
     } else {

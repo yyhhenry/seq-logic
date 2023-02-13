@@ -43,8 +43,8 @@ const openFileClick = async () => {
 <template>
   <TitleView :title="title" />
   <ElContainer>
-    <ElHeader class="header">
-      <h1 class="user-select-none">
+    <ElHeader class="header draggable-of-frame">
+      <h1>
         <span> {{ title }} </span>
         <span style="margin-left: 10px">
           <span style="font-style: italic">
@@ -93,5 +93,12 @@ const openFileClick = async () => {
 }
 .user-select-none {
   user-select: none;
+}
+.draggable-of-frame {
+  user-select: none;
+  -webkit-app-region: drag;
+}
+.draggable-of-frame button {
+  -webkit-app-region: no-drag;
 }
 </style>
