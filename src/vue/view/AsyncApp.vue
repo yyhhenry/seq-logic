@@ -42,7 +42,7 @@ const openFileClick = async () => {
 </script>
 <template>
   <TitleView :title="title" />
-  <ElContainer>
+  <ElContainer class="root">
     <ElHeader class="header draggable-of-frame">
       <h1>
         <span> {{ title }} </span>
@@ -85,6 +85,9 @@ const openFileClick = async () => {
   </ElContainer>
 </template>
 <style scoped>
+.root {
+  height: 100vh;
+}
 .header {
   display: flex;
   align-items: center;

@@ -5,6 +5,7 @@ specifiers:
   '@types/node': ^18.14.0
   '@types/uuid': ^9.0.0
   '@vitejs/plugin-vue': ^4.0.0
+  '@vueuse/core': ^9.13.0
   cross-env: ^7.0.3
   electron: ^22.3.0
   electron-builder: ^23.6.0
@@ -19,6 +20,7 @@ specifiers:
 
 dependencies:
   '@element-plus/icons-vue': 2.0.10_vue@3.2.47
+  '@vueuse/core': 9.13.0_vue@3.2.47
   element-plus: 2.2.32_vue@3.2.47
   sass: 1.58.3
   uuid: 9.0.0
