@@ -16,11 +16,6 @@ const createWindow = () => {
         height: 600,
         minWidth: 800,
         minHeight: 600,
-        titleBarStyle: 'hidden',
-        titleBarOverlay: {
-            color: 'rgb(68, 132, 229)',
-            symbolColor: 'white',
-        },
         webPreferences: {
             preload: path.join(mainFolder, 'electron/preload.js'),
         },

@@ -45,7 +45,7 @@ const openFileClick = async () => {
   <ElContainer class="root">
     <ElHeader class="header draggable-of-frame">
       <h1>
-        <span> {{ title }} </span>
+        <span> {{ title }}</span>
         <span style="margin-left: 10px">
           <span style="font-style: italic">
             {{ 'Powered By ' }}
@@ -91,8 +91,8 @@ const openFileClick = async () => {
 .header {
   display: flex;
   align-items: center;
-  background-color: rgb(68, 132, 229);
-  color: white;
+  background-color: var(--color-background-mute);
+  color: var(--color-heading);
 }
 .user-select-none {
   user-select: none;
