@@ -1,7 +1,7 @@
 {
-  "name": "electron-builder-pnpm-template",
+  "name": "seq-logic",
   "version": "1.0.0",
-  "description": "Electron Builder Pnpm Template",
+  "description": "SeqLogic",
   "main": "dist/electron/main.js",
   "scripts": {
     "fn:vue-dev": "vite --port 3000",
@@ -18,7 +18,7 @@
     "app-build": "run-s fn:vite-build fn:electron-build"
   },
   "build": {
-    "productName": "Electron Builder Pnpm Template",
+    "productName": "SeqLogic",
     "files": [
       "dist",
       "resources"
@@ -49,23 +49,23 @@
   "author": "yyhhenry",
   "license": "ISC",
   "dependencies": {
-    "@element-plus/icons-vue": "^2.0.10",
+    "@element-plus/icons-vue": "^2.1.0",
     "@vueuse/core": "^9.13.0",
-    "element-plus": "^2.2.32",
-    "sass": "^1.58.3",
+    "element-plus": "^2.3.2",
+    "sass": "^1.60.0",
     "uuid": "^9.0.0",
     "vue": "^3.2.47"
   },
   "devDependencies": {
-    "@types/node": "^18.14.0",
-    "@types/uuid": "^9.0.0",
-    "@vitejs/plugin-vue": "^4.0.0",
+    "@types/node": "^18.15.11",
+    "@types/uuid": "^9.0.1",
+    "@vitejs/plugin-vue": "^4.1.0",
     "cross-env": "^7.0.3",
-    "electron": "^22.3.0",
+    "electron": "^22.3.5",
     "electron-builder": "^23.6.0",
     "npm-run-all": "^4.1.5",
-    "typescript": "5.0.0-dev.20230127",
-    "vite": "^4.1.4",
-    "vue-tsc": "^1.1.6"
+    "typescript": "5.0.3",
+    "vite": "^4.2.1",
+    "vue-tsc": "^1.2.0"
   }
 }

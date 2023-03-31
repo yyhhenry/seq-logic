@@ -5,7 +5,7 @@ import path from 'path';
 import { v4 as uuidV4 } from 'uuid';
 import { isDevelopmentMode } from '../isDevelopmentMode';
 const content: WholeHandler['content'] = {
-    title: async () => `Electron Builder Pnpm Template - ${process.platform}`,
+    title: async () => `SeqLogic - ${process.platform}`,
     uuid: () => uuidV4(),
 };
 const fs: WholeHandler['fs'] = {
