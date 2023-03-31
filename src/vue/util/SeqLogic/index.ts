@@ -1,5 +1,4 @@
-import { getDiffieHellman } from 'crypto';
-import chain from 'lodash/chain';
+import { chain } from 'lodash';
 interface BasePoint {
     x: number;
     y: number;
@@ -132,7 +131,7 @@ export class Diagram {
         this.status = new Map(
             [...this.points.entries()].map(([id, { powered }]) => [
                 id,
-                { active: powered, nextTick: undefined },
+                { active: powered },
             ])
         );
         this.toggle = new Map();
@@ -143,6 +142,11 @@ export class Diagram {
         this.updatePrec = new Map();
         this.updateSucc = new Map();
         this.parse();
+        for (const [id, value] of this.groupRoot.entries()) {
+            if (id == value) {
+                this.activate(id);
+            }
+        }
     }
     parse() {
         this.lineWithPoint = new Map(
@@ -194,13 +198,14 @@ export class Diagram {
             this.updateSucc.get(start)!.add(end);
         }
     }
-    resolveToggle() {
+    resolveToggles() {
         const toggle = this.toggle.get(this.current);
         if (toggle !== undefined) {
             const succList = new Set<string>();
             for (const id of toggle) {
                 const status = this.status.get(id)!;
                 status.active = !status.active;
+                status.nextTick = undefined;
                 for (const succ of this.updateSucc.get(id)!) {
                     succList.add(succ);
                 }
@@ -209,6 +214,7 @@ export class Diagram {
                 this.activate(succ);
             }
         }
+        this.toggle.delete(this.current++);
     }
     activate(pointId: string) {
         const point = this.points.get(pointId)!;
@@ -220,6 +226,7 @@ export class Diagram {
         if (result == status.active) {
             if (status.nextTick !== undefined) {
                 (this.toggle.get(status.nextTick) ?? new Map()).delete(pointId);
+                status.nextTick = undefined;
             }
         } else {
             if (status.nextTick === undefined) {
