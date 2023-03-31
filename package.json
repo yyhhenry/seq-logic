@@ -14,8 +14,8 @@
     "fn:electron-build": "run-s fn:electron-compile fn:electron-package",
     "fn:vite-build": "run-s fn:vite-compile fn:vite-build-only",
     "preload-recompile": "run-s fn:electron-compile",
-    "app-dev": "run-s fn:electron-compile fn:app-parallel-dev",
-    "app-build": "run-s fn:vite-build fn:electron-build"
+    "dev": "run-s fn:electron-compile fn:app-parallel-dev",
+    "build": "run-s fn:vite-build fn:electron-build"
   },
   "build": {
     "productName": "SeqLogic",
@@ -61,7 +61,7 @@
     "@types/uuid": "^9.0.1",
     "@vitejs/plugin-vue": "^4.1.0",
     "cross-env": "^7.0.3",
-    "electron": "^22.3.5",
+    "electron": "^23.2.1",
     "electron-builder": "^23.6.0",
     "npm-run-all": "^4.1.5",
     "typescript": "5.0.3",
