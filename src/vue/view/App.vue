@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ElContainer, ElHeader, ElMain } from 'element-plus';
-import TitleView from './components/Title.vue';
+import { ElContainer, ElHeader, ElMain, ElScrollbar } from 'element-plus';
 import { remote } from '@/remote';
-import { useDark } from '@vueuse/core';
+import { useDark, useTitle } from '@vueuse/core';
 import { promiseRef } from '@/util/promiseRef';
 import LRMenu from './components/LRMenu.vue';
-useDark();
+import Editor from './Editor.vue';
+import { ref } from 'vue';
 const title = promiseRef(remote.content.title());
+useTitle(title);
+useDark();
+const homepage = ref(true);
 </script>
 <template>
-  <TitleView :title="title" v-if="title !== undefined" />
-  <ElContainer class="root">
+  <ElContainer class="root" v-if="homepage">
     <ElHeader class="root-header">
       <LRMenu>
         <h1>Title</h1>
@@ -19,8 +21,13 @@ const title = promiseRef(remote.content.title());
         </template>
       </LRMenu>
     </ElHeader>
-    <ElMain class="no-padding"> </ElMain>
+    <ElMain class="no-padding">
+      <ElScrollbar>
+        <!-- File list -->
+      </ElScrollbar>
+    </ElMain>
   </ElContainer>
+  <Editor v-else />
 </template>
 <style scoped>
 .root {
@@ -34,5 +41,11 @@ const title = promiseRef(remote.content.title());
 }
 .no-padding {
   padding: 0;
+}
+.full-width {
+  width: 100%;
+}
+.full-height {
+  height: 100%;
 }
 </style>
