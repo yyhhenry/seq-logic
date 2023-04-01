@@ -1,4 +1,4 @@
-import { chain } from 'lodash';
+import { clone } from 'lodash';
 interface BasePoint {
     x: number;
     y: number;
@@ -18,6 +18,7 @@ export interface Line {
 }
 export interface Text extends BasePoint {
     text: string;
+    size: string;
 }
 export interface Viewport extends BasePoint {
     scale: number;
@@ -29,6 +30,7 @@ export interface DiagramStorage {
     viewport: Viewport;
 }
 export interface Status {
+    powered: boolean;
     active: boolean;
     nextTick?: number;
 }
@@ -47,13 +49,24 @@ export class History<T> {
     }
     get(id: string) {
         const origin = this.items.get(id);
-        return chain(origin).clone().value();
+        return clone(origin);
     }
-    private put(id: string, value: T) {
+    delete(id: string) {
         const cur = this.history[this.current];
         const origin = this.items.get(id);
         const item = cur.get(id);
-        const inserted = chain(value).clone().value();
+        if (item) {
+            item.inserted = undefined;
+        } else {
+            cur.set(id, { deleted: origin });
+        }
+        this.items.delete(id);
+    }
+    put(id: string, value: T) {
+        const cur = this.history[this.current];
+        const origin = this.items.get(id);
+        const item = cur.get(id);
+        const inserted = clone(value);
         if (item) {
             item.inserted = inserted;
         } else {
@@ -61,13 +74,12 @@ export class History<T> {
         }
         this.items.set(id, inserted);
     }
-    modify(f: (put: (id: string, value: T) => void) => void) {
+    save() {
         while (this.current < this.history.length - 1) {
             this.history.pop();
         }
         this.current++;
         this.history.push(new Map<string, BaseModification<T>>());
-        f((...args) => this.put(...args));
     }
     /**
      *  Do not modify the items.
@@ -131,7 +143,7 @@ export class Diagram {
         this.status = new Map(
             [...this.points.entries()].map(([id, { powered }]) => [
                 id,
-                { active: powered },
+                { active: powered, powered },
             ])
         );
         this.toggle = new Map();
@@ -148,6 +160,15 @@ export class Diagram {
             }
         }
     }
+    getGroupRoot(pointId: string): string {
+        const fa = this.groupRoot.get(pointId)!;
+        if (fa == pointId) {
+            return pointId;
+        }
+        const result = this.getGroupRoot(fa);
+        this.groupRoot.set(pointId, result);
+        return result;
+    }
     parse() {
         this.lineWithPoint = new Map(
             [...this.points.entries()].map(([id]) => [id, new Set()])
@@ -156,31 +177,26 @@ export class Diagram {
             this.lineWithPoint.get(line.start)!.add(id);
             this.lineWithPoint.get(line.end)!.add(id);
         }
+        for (const [id, status] of this.status.entries()) {
+            status.powered = this.points.get(id)!.powered;
+        }
         this.groupRoot = new Map(
             [...this.points.entries()].map(([id]) => [id, id])
         );
-        const getFather = (u: string): string => {
-            const fa = this.groupRoot.get(u)!;
-            if (fa == u) {
-                return u;
-            }
-            const result = getFather(fa);
-            this.groupRoot.set(u, result);
-            return result;
-        };
         for (const [_id, line] of this.lines.entries()) {
             if (line.not) {
                 continue;
             }
-            const start = getFather(line.start);
-            const end = getFather(line.end);
+            const start = this.getGroupRoot(line.start);
+            const end = this.getGroupRoot(line.end);
             if (start == end) {
                 continue;
             }
             this.groupRoot.set(start, end);
+            this.status.get(end)!.powered ||= this.status.get(start)!.powered;
         }
         for (const id of this.points.keys()) {
-            getFather(id);
+            this.getGroupRoot(id);
         }
         this.updatePrec = new Map(
             [...this.points.entries()].map(([id]) => [id, new Set()])
@@ -192,8 +208,8 @@ export class Diagram {
             if (!line.not) {
                 continue;
             }
-            const start = getFather(line.start);
-            const end = getFather(line.end);
+            const start = this.getGroupRoot(line.start);
+            const end = this.getGroupRoot(line.end);
             this.updatePrec.get(end)!.add(start);
             this.updateSucc.get(start)!.add(end);
         }
@@ -202,6 +218,7 @@ export class Diagram {
         const toggle = this.toggle.get(this.current);
         if (toggle !== undefined) {
             const succList = new Set<string>();
+            console.log(this.current, [...toggle]);
             for (const id of toggle) {
                 const status = this.status.get(id)!;
                 status.active = !status.active;
@@ -217,9 +234,8 @@ export class Diagram {
         this.toggle.delete(this.current++);
     }
     activate(pointId: string) {
-        const point = this.points.get(pointId)!;
         const status = this.status.get(pointId)!;
-        let result = point.powered;
+        let result = status.powered;
         for (const prec of this.updatePrec.get(pointId)!) {
             result ||= !this.status.get(prec)!.active;
         }
@@ -239,15 +255,16 @@ export class Diagram {
             }
         }
     }
+    getStatus(pointId: string) {
+        return this.status.get(this.getGroupRoot(pointId)!)!;
+    }
     // TODO undo/redo
     toStorage(): DiagramStorage {
-        return chain({
+        return clone({
             points: Object.fromEntries(this.points.entries()),
             lines: Object.fromEntries(this.lines.entries()),
             texts: Object.fromEntries(this.texts.entries()),
             viewport: this.viewport,
-        })
-            .clone()
-            .value();
+        });
     }
 }
