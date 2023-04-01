@@ -1,4 +1,5 @@
 import { clone } from 'lodash';
+import { v4 as uuid } from 'uuid';
 interface BasePoint {
     x: number;
     y: number;
@@ -47,6 +48,9 @@ export class History<T> {
         this.history = [];
         this.current = -1;
     }
+    has(id: string) {
+        return this.items.has(id);
+    }
     get(id: string) {
         const origin = this.items.get(id);
         return clone(origin);
@@ -62,7 +66,7 @@ export class History<T> {
         }
         this.items.delete(id);
     }
-    put(id: string, value: T) {
+    set(id: string, value: T) {
         const cur = this.history[this.current];
         const origin = this.items.get(id);
         const item = cur.get(id);
@@ -134,6 +138,7 @@ export class Diagram {
     updateSucc: Map<string, Set<string>>;
 
     constructor(storage: DiagramStorage) {
+        storage = clone(storage);
         function recordToMap<T>(record: Record<string, T>) {
             return new History(new Map(Object.entries(record)));
         }
@@ -154,6 +159,8 @@ export class Diagram {
         this.updatePrec = new Map();
         this.updateSucc = new Map();
         this.parse();
+    }
+    activateAll() {
         for (const [id, value] of this.groupRoot.entries()) {
             if (id == value) {
                 this.activate(id);
@@ -213,6 +220,7 @@ export class Diagram {
             this.updatePrec.get(end)!.add(start);
             this.updateSucc.get(start)!.add(end);
         }
+        this.activateAll();
     }
     resolveToggles() {
         const toggle = this.toggle.get(this.current);
@@ -258,7 +266,69 @@ export class Diagram {
     getStatus(pointId: string) {
         return this.status.get(this.getGroupRoot(pointId)!)!;
     }
-    // TODO undo/redo
+    save() {
+        this.points.save();
+        this.lines.save();
+        this.texts.save();
+    }
+    undo() {
+        this.points.undo();
+        this.lines.undo();
+        this.texts.undo();
+        this.parse();
+    }
+    redo() {
+        this.points.redo();
+        this.lines.redo();
+        this.texts.redo();
+        this.parse();
+    }
+    addPoint(point: Point) {
+        this.save();
+        const id = uuid();
+        this.points.set(id, point);
+        this.parse();
+    }
+    addLine(line: Line) {
+        this.save();
+        const id = uuid();
+        this.lines.set(id, line);
+        this.parse();
+    }
+    addText(text: Text) {
+        this.save();
+        const id = uuid();
+        this.texts.set(id, text);
+    }
+    removePoint(id: string) {
+        this.save();
+        if (this.points.has(id)) {
+            this.points.delete(id);
+            for (const lineId of this.lineWithPoint.get(id)!) {
+                this.lines.delete(lineId);
+            }
+        } else {
+            throw new Error('point not found');
+        }
+        this.parse();
+    }
+    removeLine(id: string) {
+        this.save();
+        if (this.lines.has(id)) {
+            this.lines.delete(id);
+        } else {
+            throw new Error('line not found');
+        }
+        this.parse();
+    }
+    removeText(id: string) {
+        this.save();
+        if (this.texts.has(id)) {
+            this.texts.delete(id);
+        } else {
+            throw new Error('text not found');
+        }
+    }
     toStorage(): DiagramStorage {
         return clone({
             points: Object.fromEntries(this.points.entries()),
