@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ElMain } from 'element-plus';
+import { ElMain, ElContainer, ElHeader } from 'element-plus';
+import LRMenu from './components/LRMenu.vue';
 </script>
 <template>
   <ElContainer class="root">
