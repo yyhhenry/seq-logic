@@ -1,35 +1,91 @@
 import { clone } from 'lodash';
 import { v4 as uuid } from 'uuid';
+import { MaybeObject, isObjectMaybe } from '../types';
+import { isObjectOf } from '../types';
 interface BasePoint {
     x: number;
     y: number;
 }
+export const isBasePoint = <T extends BasePoint>(
+    u: unknown
+): u is BasePoint & MaybeObject<T> => {
+    return (
+        isObjectMaybe<BasePoint>(u) &&
+        typeof u.x === 'number' &&
+        typeof u.y === 'number'
+    );
+};
 export interface Clock {
     offset: number;
     duration: number;
 }
+export const isClock = (u: unknown): u is Clock => {
+    return (
+        isObjectMaybe<Clock>(u) &&
+        typeof u.offset === 'number' &&
+        typeof u.duration === 'number'
+    );
+};
 export interface Point extends BasePoint {
     powered: boolean;
     clock?: Clock;
 }
+export const isPoint = (u: unknown): u is Point => {
+    return (
+        isBasePoint<Point>(u) &&
+        typeof u.powered === 'boolean' &&
+        (u.clock === undefined || isClock(u.clock))
+    );
+};
 export interface Line {
     start: string;
     end: string;
     not: boolean;
 }
+export const isLine = (u: unknown): u is Line => {
+    return (
+        isObjectMaybe<Line>(u) &&
+        typeof u.start === 'string' &&
+        typeof u.end === 'string' &&
+        typeof u.not === 'boolean'
+    );
+};
 export interface Text extends BasePoint {
     text: string;
     size: string;
 }
+export const isText = (u: unknown): u is Text => {
+    return (
+        isBasePoint<Text>(u) &&
+        typeof u.text === 'string' &&
+        typeof u.size === 'string'
+    );
+};
 export interface Viewport extends BasePoint {
     scale: number;
 }
+export const isViewport = (u: unknown): u is Viewport => {
+    return (
+        isBasePoint<Viewport>(u) && typeof u.scale === 'number' && u.scale > 0
+    );
+};
 export interface DiagramStorage {
+    title: string;
     points: Record<string, Point>;
     lines: Record<string, Line>;
     texts: Record<string, Text>;
     viewport: Viewport;
 }
+export const isDiagramStorage = (u: any): u is DiagramStorage => {
+    return (
+        isObjectMaybe<DiagramStorage>(u) &&
+        typeof u.title === 'string' &&
+        isObjectOf(u.points, isPoint) &&
+        isObjectOf(u.lines, isLine) &&
+        isObjectOf(u.texts, isText) &&
+        isViewport(u.viewport)
+    );
+};
 export interface Status {
     powered: boolean;
     active: boolean;
@@ -40,9 +96,9 @@ export interface BaseModification<T> {
     inserted?: T;
 }
 export class History<T> {
-    items: Map<string, T>;
-    history: Map<string, BaseModification<T>>[];
-    current: number;
+    private items: Map<string, T>;
+    private history: Map<string, BaseModification<T>>[];
+    private current: number;
     constructor(items: Map<string, T>) {
         this.items = items;
         this.history = [];
@@ -78,7 +134,7 @@ export class History<T> {
         }
         this.items.set(id, inserted);
     }
-    save() {
+    saveHistory() {
         while (this.current < this.history.length - 1) {
             this.history.pop();
         }
@@ -123,22 +179,31 @@ export class History<T> {
         return true;
     }
 }
+/**
+ * A diagram.
+ *
+ * When updating the position of the points and texts, no need to re-parse the whole diagram. But you need to call saveHistory() after the update.
+ * You should not update the existence of the points, lines and texts. You should call add and remove instead.
+ * When updating the title and viewport, no need to call anything and there is no history.
+ */
 export class Diagram {
+    title: string;
     points: History<Point>;
     lines: History<Line>;
     texts: History<Text>;
-    status: Map<string, Status>;
-    toggle: Map<number, Set<string>>;
-    current: number;
     viewport: Viewport;
 
-    lineWithPoint: Map<string, Set<string>>;
-    groupRoot: Map<string, string>;
-    updatePrec: Map<string, Set<string>>;
-    updateSucc: Map<string, Set<string>>;
+    private status: Map<string, Status>;
+    private toggle: Map<number, Set<string>>;
+    private current: number;
+    private lineWithPoint: Map<string, Set<string>>;
+    private groupRoot: Map<string, string>;
+    private updatePrec: Map<string, Set<string>>;
+    private updateSucc: Map<string, Set<string>>;
 
     constructor(storage: DiagramStorage) {
         storage = clone(storage);
+        this.title = storage.title;
         function recordToMap<T>(record: Record<string, T>) {
             return new History(new Map(Object.entries(record)));
         }
@@ -160,14 +225,14 @@ export class Diagram {
         this.updateSucc = new Map();
         this.parse();
     }
-    activateAll() {
+    private activateAll() {
         for (const [id, value] of this.groupRoot.entries()) {
             if (id == value) {
                 this.activate(id);
             }
         }
     }
-    getGroupRoot(pointId: string): string {
+    private getGroupRoot(pointId: string): string {
         const fa = this.groupRoot.get(pointId)!;
         if (fa == pointId) {
             return pointId;
@@ -176,7 +241,10 @@ export class Diagram {
         this.groupRoot.set(pointId, result);
         return result;
     }
-    parse() {
+    /**
+     * Parse the diagram and build the data structure.
+     */
+    private parse() {
         this.lineWithPoint = new Map(
             [...this.points.entries()].map(([id]) => [id, new Set()])
         );
@@ -222,7 +290,10 @@ export class Diagram {
         }
         this.activateAll();
     }
-    resolveToggles() {
+    /**
+     * Get into the next tick.
+     */
+    nextTick() {
         const toggle = this.toggle.get(this.current);
         if (toggle !== undefined) {
             const succList = new Set<string>();
@@ -241,7 +312,7 @@ export class Diagram {
         }
         this.toggle.delete(this.current++);
     }
-    activate(pointId: string) {
+    private activate(pointId: string) {
         const status = this.status.get(pointId)!;
         let result = status.powered;
         for (const prec of this.updatePrec.get(pointId)!) {
@@ -266,10 +337,13 @@ export class Diagram {
     getStatus(pointId: string) {
         return this.status.get(this.getGroupRoot(pointId)!)!;
     }
-    save() {
-        this.points.save();
-        this.lines.save();
-        this.texts.save();
+    /**
+     * Save the history to handle undo and redo.
+     */
+    saveHistory() {
+        this.points.saveHistory();
+        this.lines.saveHistory();
+        this.texts.saveHistory();
     }
     undo() {
         this.points.undo();
@@ -284,24 +358,24 @@ export class Diagram {
         this.parse();
     }
     addPoint(point: Point) {
-        this.save();
+        this.saveHistory();
         const id = uuid();
         this.points.set(id, point);
         this.parse();
     }
     addLine(line: Line) {
-        this.save();
+        this.saveHistory();
         const id = uuid();
         this.lines.set(id, line);
         this.parse();
     }
     addText(text: Text) {
-        this.save();
+        this.saveHistory();
         const id = uuid();
         this.texts.set(id, text);
     }
     removePoint(id: string) {
-        this.save();
+        this.saveHistory();
         if (this.points.has(id)) {
             this.points.delete(id);
             for (const lineId of this.lineWithPoint.get(id)!) {
@@ -313,7 +387,7 @@ export class Diagram {
         this.parse();
     }
     removeLine(id: string) {
-        this.save();
+        this.saveHistory();
         if (this.lines.has(id)) {
             this.lines.delete(id);
         } else {
@@ -322,7 +396,7 @@ export class Diagram {
         this.parse();
     }
     removeText(id: string) {
-        this.save();
+        this.saveHistory();
         if (this.texts.has(id)) {
             this.texts.delete(id);
         } else {
@@ -331,6 +405,7 @@ export class Diagram {
     }
     toStorage(): DiagramStorage {
         return clone({
+            title: this.title,
             points: Object.fromEntries(this.points.entries()),
             lines: Object.fromEntries(this.lines.entries()),
             texts: Object.fromEntries(this.texts.entries()),
@@ -338,3 +413,17 @@ export class Diagram {
         });
     }
 }
+
+export const getBlankDiagramStorage = (): DiagramStorage => {
+    return {
+        title: 'Untitled',
+        points: {},
+        lines: {},
+        texts: {},
+        viewport: {
+            x: 0,
+            y: 0,
+            scale: 1,
+        },
+    };
+};

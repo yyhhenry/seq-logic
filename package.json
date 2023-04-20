@@ -52,6 +52,7 @@
     "@element-plus/icons-vue": "^2.1.0",
     "@vueuse/core": "^9.13.0",
     "element-plus": "^2.3.2",
+    "idb": "^7.1.1",
     "lodash": "^4.17.21",
     "sass": "^1.60.0",
     "uuid": "^9.0.0",

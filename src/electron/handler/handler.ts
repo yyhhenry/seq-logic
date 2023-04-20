@@ -24,6 +24,10 @@ const fs: WholeHandler['fs'] = {
         const result = await dialog.showOpenDialog(option);
         return result.canceled ? undefined : result.filePaths;
     },
+    saveFile: async (_event, option) => {
+        const result = await dialog.showSaveDialog(option);
+        return result.canceled ? undefined : result.filePath;
+    },
     readFile: async (_event, pathname) => {
         return await nodeFS.readFile(pathname, { encoding: 'utf-8' });
     },

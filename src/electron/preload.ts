@@ -27,6 +27,7 @@ const fs = invokerOf('fs', {
     getFileSize: 0,
     joinPath: 0,
     resolvePath: 0,
+    saveFile: 0,
 });
 const remote: WholeRemote = { content, fs };
 contextBridge.exposeInMainWorld('remote', remote);

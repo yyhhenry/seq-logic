@@ -10,6 +10,9 @@ dependencies:
   element-plus:
     specifier: ^2.3.2
     version: 2.3.2(vue@3.2.47)
+  idb:
+    specifier: ^7.1.1
+    version: 7.1.1
   lodash:
     specifier: ^4.17.21
     version: 4.17.21
@@ -1799,6 +1802,10 @@ packages:
     dependencies:
       safer-buffer: 2.1.2
     dev: true
+
+  /idb@7.1.1:
+    resolution: {integrity: sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==}
+    dev: false
 
   /ieee754@1.2.1:
     resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}

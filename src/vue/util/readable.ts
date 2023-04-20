@@ -16,3 +16,7 @@ export const readableSize = (size: number) => {
     const last = names.length - 1;
     return `${(size / rate ** last).toPrecision(4)}${names[last]}`;
 };
+export function readableDate(date: number | string | Date) {
+    date = new Date(date);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+}

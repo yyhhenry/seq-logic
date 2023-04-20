@@ -1,15 +1,24 @@
 <script setup lang="ts">
-import { ElMain, ElContainer, ElHeader } from 'element-plus';
+import { ElMain, ElContainer, ElHeader, ElButton } from 'element-plus';
 import LRMenu from './components/LRMenu.vue';
+const props = defineProps<{
+  pathname: string;
+}>();
+defineEmits<{
+  (e: 'close'): void;
+}>();
 </script>
 <template>
   <ElContainer class="root">
     <ElHeader class="root-header">
       <LRMenu>
-        <h1>Title</h1>
-        <template #end>
-          <h1>Account</h1>
-        </template>
+        <ElButton :plain="true" class="header-text" @click="$emit('close')">
+          Back
+        </ElButton>
+        <div class="header-text">
+          {{ pathname }}
+        </div>
+        <template #end> </template>
       </LRMenu>
     </ElHeader>
     <ElMain class="no-padding no-scroll">
@@ -17,7 +26,14 @@ import LRMenu from './components/LRMenu.vue';
     </ElMain>
   </ElContainer>
 </template>
-<style scoped>
+<style lang="scss" scoped>
+.root {
+  height: 100vh;
+}
+.root-header {
+  background-color: var(--color-background-mute);
+  user-select: none;
+}
 .no-padding {
   padding: 0;
 }
@@ -29,5 +45,11 @@ import LRMenu from './components/LRMenu.vue';
 }
 .full-height {
   height: 100%;
+}
+.header-text {
+  user-select: none;
+  font-size: larger;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
+    'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
 }
 </style>
