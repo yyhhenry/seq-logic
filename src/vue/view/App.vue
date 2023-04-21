@@ -26,8 +26,8 @@ useTitle(title);
 useDark();
 const pathname = ref<string>();
 const files = promiseRef(getFiles(), []);
-const fetchFiles = async (pathname?:string) => {
-  if(pathname !== undefined) {
+const fetchFiles = async (pathname?: string) => {
+  if (pathname !== undefined) {
     updateFile(pathname);
   }
   files.value = await getFiles();
@@ -104,9 +104,12 @@ const onNewFile = async () => {
           <ElCol :span="24" :md="16" v-for="file of files">
             <ElCard class="button-card" @click="onOpen(file)">
               <ElRow :justify="'space-between'" :align="'middle'">
-                <h2 class="header-text">
-                  {{ readableFilename(file.pathname) }}
-                </h2>
+                <div>
+                  <h2 class="header-text">
+                    {{ readableFilename(file.pathname) }}
+                  </h2>
+                  <p>{{ file.pathname }}</p>
+                </div>
                 <span>{{ readableDate(file.updatedTime) }}</span>
               </ElRow>
             </ElCard>
@@ -146,6 +149,7 @@ const onNewFile = async () => {
   }
 }
 .header-text {
+  color: var(--color-heading);
   user-select: none;
   font-size: larger;
   font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',

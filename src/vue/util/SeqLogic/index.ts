@@ -2,6 +2,7 @@ import { clone } from 'lodash';
 import { v4 as uuid } from 'uuid';
 import { MaybeObject, isObjectMaybe } from '../types';
 import { isObjectOf } from '../types';
+import remote from '@/remote';
 interface BasePoint {
     x: number;
     y: number;
@@ -198,6 +199,8 @@ export class Diagram {
     private updatePrec: Map<string, Set<string>>;
     private updateSucc: Map<string, Set<string>>;
 
+    modified: boolean;
+
     constructor(storage: DiagramStorage) {
         storage = clone(storage);
         function recordToMap<T>(record: Record<string, T>) {
@@ -219,6 +222,7 @@ export class Diagram {
         this.groupRoot = new Map();
         this.updatePrec = new Map();
         this.updateSucc = new Map();
+        this.modified = false;
         this.parse();
     }
     private activateAll() {
@@ -337,6 +341,7 @@ export class Diagram {
      * Save the history to handle undo and redo.
      */
     saveHistory() {
+        this.modified = true;
         this.points.saveHistory();
         this.lines.saveHistory();
         this.texts.saveHistory();
@@ -406,6 +411,20 @@ export class Diagram {
             texts: Object.fromEntries(this.texts.entries()),
             viewport: this.viewport,
         });
+    }
+    static async loadFile(pathname: string) {
+        const content = await remote.fs.readFile(pathname, 'utf-8');
+        const diagram = JSON.parse(content);
+        if (isDiagramStorage(diagram)) {
+            return diagram;
+        } else {
+            throw new Error('Invalid file');
+        }
+    }
+    async saveFile(pathname: string) {
+        const storage = this.toStorage();
+        await remote.fs.writeFile(pathname, JSON.stringify(storage));
+        this.modified = false;
     }
 }
 

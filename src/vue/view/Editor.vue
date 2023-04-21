@@ -10,8 +10,9 @@ import { Close } from '@element-plus/icons-vue';
 import LRMenu from './components/LRMenu.vue';
 import remote from '@/remote';
 import { deleteFile } from '@/util/database';
-import { isDiagramStorage } from '@/util/SeqLogic';
+import { Diagram, isDiagramStorage } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
+import { readableFilename } from '@/util/readable';
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
@@ -24,18 +25,19 @@ const emits = defineEmits<{
 }>();
 const getDiagram = async () => {
   try {
-    const content = await remote.fs.readFile(props.pathname);
-    const diagram = JSON.parse(content.toString());
-    if (isDiagramStorage(diagram)) {
-      return diagram;
-    } else {
-      throw new Error('Invalid file');
-    }
+    return Diagram.loadFile(props.pathname);
   } catch (e) {
     ElMessageBox.alert('Failed to open file: ' + props.pathname);
     deleteFile(props.pathname);
     emits('close');
   }
+};
+const onClose = async () => {
+  ElMessageBox.confirm('Close now?')
+    .then(() => {
+      emits('close');
+    })
+    .catch(() => {});
 };
 const diagram = promiseRef(getDiagram());
 </script>
@@ -44,14 +46,15 @@ const diagram = promiseRef(getDiagram());
     <ElHeader class="root-header">
       <LRMenu>
         <ElButton
-          :plain="true"
+          :type="'info'"
           class="header-text"
-          @click="$emit('close')"
+          @click="onClose()"
           :icon="Close"
+          :circle="true"
         >
         </ElButton>
-        <div class="header-text">
-          {{ pathname }}
+        <div class="header-text" style="margin: 10px">
+          {{ readableFilename(pathname) }}
         </div>
         <template #end> </template>
       </LRMenu>
