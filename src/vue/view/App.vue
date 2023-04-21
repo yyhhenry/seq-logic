@@ -16,7 +16,7 @@ import LRMenu from './components/LRMenu.vue';
 import Editor from './Editor.vue';
 import { ref } from 'vue';
 import { getFiles, FileRecord } from '@/util/database';
-import { readableDate } from '@/util/readable';
+import { readableDate, readableFilename } from '@/util/readable';
 import { DocumentAdd, Download } from '@element-plus/icons-vue';
 import { getBlankDiagramStorage } from '@/util/SeqLogic';
 import { websiteName } from '@/util/websiteName';
@@ -26,7 +26,10 @@ useTitle(title);
 useDark();
 const pathname = ref<string>();
 const files = promiseRef(getFiles(), []);
-const fetchFiles = async () => {
+const fetchFiles = async (pathname?:string) => {
+  if(pathname !== undefined) {
+    updateFile(pathname);
+  }
   files.value = await getFiles();
 };
 const onClose = async () => {
@@ -35,7 +38,7 @@ const onClose = async () => {
 };
 const onOpen = async (file: FileRecord) => {
   pathname.value = file.pathname;
-  updateFile(pathname.value);
+  await fetchFiles(pathname.value);
 };
 const onImport = async () => {
   const { filePaths } = await remote.main['dialog.showOpenDialog']({
@@ -51,7 +54,7 @@ const onImport = async () => {
     return;
   }
   pathname.value = filePaths[0];
-  updateFile(pathname.value);
+  await fetchFiles(pathname.value);
 };
 const onNewFile = async () => {
   const { filePath } = await remote.main['dialog.showSaveDialog']({
@@ -65,10 +68,7 @@ const onNewFile = async () => {
   }
   await remote.fs.writeFile(filePath, JSON.stringify(getBlankDiagramStorage()));
   pathname.value = filePath;
-  updateFile(pathname.value);
-};
-const getTitleOf = (pathname: string) => {
-  return remote.path.basename(pathname, '.seq.json');
+  await fetchFiles(pathname.value);
 };
 </script>
 <template>
@@ -105,7 +105,7 @@ const getTitleOf = (pathname: string) => {
             <ElCard class="button-card" @click="onOpen(file)">
               <ElRow :justify="'space-between'" :align="'middle'">
                 <h2 class="header-text">
-                  {{ getTitleOf(file.pathname) }}
+                  {{ readableFilename(file.pathname) }}
                 </h2>
                 <span>{{ readableDate(file.updatedTime) }}</span>
               </ElRow>
