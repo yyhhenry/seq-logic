@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { ElMain, ElContainer, ElHeader, ElButton } from 'element-plus';
+import {
+  ElMain,
+  ElContainer,
+  ElHeader,
+  ElButton,
+  ElMessageBox,
+} from 'element-plus';
 import { Close } from '@element-plus/icons-vue';
 import LRMenu from './components/LRMenu.vue';
+import remote from '@/remote';
+import { deleteFile } from '@/util/database';
+import { isDiagramStorage } from '@/util/SeqLogic';
+import { promiseRef } from '@/util/promiseRef';
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
@@ -9,9 +19,25 @@ const props = defineProps<{
    */
   pathname: string;
 }>();
-defineEmits<{
+const emits = defineEmits<{
   (e: 'close'): void;
 }>();
+const getDiagram = async () => {
+  try {
+    const content = await remote.fs.readFile(props.pathname);
+    const diagram = JSON.parse(content.toString());
+    if (isDiagramStorage(diagram)) {
+      return diagram;
+    } else {
+      throw new Error('Invalid file');
+    }
+  } catch (e) {
+    ElMessageBox.alert('Failed to open file: ' + props.pathname);
+    deleteFile(props.pathname);
+    emits('close');
+  }
+};
+const diagram = promiseRef(getDiagram());
 </script>
 <template>
   <ElContainer class="root">

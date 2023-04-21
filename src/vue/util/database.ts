@@ -40,3 +40,11 @@ export const updateFile = async (pathname: string) => {
     files.sort((a, b) => b.updatedTime - a.updatedTime);
     await (await db).put('seq-logic', files, 'files');
 };
+export const deleteFile = async (pathname: string) => {
+    const files = await getFiles();
+    const index = files.findIndex(f => f.pathname === pathname);
+    if (index !== -1) {
+        files.splice(index, 1);
+        await (await db).put('seq-logic', files, 'files');
+    }
+}

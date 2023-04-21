@@ -70,7 +70,6 @@ export const isViewport = (u: unknown): u is Viewport => {
     );
 };
 export interface DiagramStorage {
-    title: string;
     points: Record<string, Point>;
     lines: Record<string, Line>;
     texts: Record<string, Text>;
@@ -79,7 +78,6 @@ export interface DiagramStorage {
 export const isDiagramStorage = (u: any): u is DiagramStorage => {
     return (
         isObjectMaybe<DiagramStorage>(u) &&
-        typeof u.title === 'string' &&
         isObjectOf(u.points, isPoint) &&
         isObjectOf(u.lines, isLine) &&
         isObjectOf(u.texts, isText) &&
@@ -184,10 +182,9 @@ export class History<T> {
  *
  * When updating the position of the points and texts, no need to re-parse the whole diagram. But you need to call saveHistory() after the update.
  * You should not update the existence of the points, lines and texts. You should call add and remove instead.
- * When updating the title and viewport, no need to call anything and there is no history.
+ * When updating the viewport, no need to call anything and there is no history.
  */
 export class Diagram {
-    title: string;
     points: History<Point>;
     lines: History<Line>;
     texts: History<Text>;
@@ -203,7 +200,6 @@ export class Diagram {
 
     constructor(storage: DiagramStorage) {
         storage = clone(storage);
-        this.title = storage.title;
         function recordToMap<T>(record: Record<string, T>) {
             return new History(new Map(Object.entries(record)));
         }
@@ -405,7 +401,6 @@ export class Diagram {
     }
     toStorage(): DiagramStorage {
         return clone({
-            title: this.title,
             points: Object.fromEntries(this.points.entries()),
             lines: Object.fromEntries(this.lines.entries()),
             texts: Object.fromEntries(this.texts.entries()),
@@ -416,7 +411,6 @@ export class Diagram {
 
 export const getBlankDiagramStorage = (): DiagramStorage => {
     return {
-        title: 'Untitled',
         points: {},
         lines: {},
         texts: {},
