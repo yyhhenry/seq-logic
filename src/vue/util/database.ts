@@ -1,8 +1,10 @@
 import {openDB, type DBSchema} from 'idb';
-
+/**
+ * FileRecord
+ * title is deprecated, use path.filename(pathname) instead
+ */
 export interface FileRecord {
     pathname: string;
-    title: string;
     updatedTime: number;
 }
 

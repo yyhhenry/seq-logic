@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { ElMain, ElContainer, ElHeader, ElButton } from 'element-plus';
+import { Close } from '@element-plus/icons-vue';
 import LRMenu from './components/LRMenu.vue';
 const props = defineProps<{
+  /**
+   * The pathname of the file being edited.
+   * You should also put this in the key attribute of the component.
+   */
   pathname: string;
 }>();
 defineEmits<{
@@ -12,8 +17,12 @@ defineEmits<{
   <ElContainer class="root">
     <ElHeader class="root-header">
       <LRMenu>
-        <ElButton :plain="true" class="header-text" @click="$emit('close')">
-          Back
+        <ElButton
+          :plain="true"
+          class="header-text"
+          @click="$emit('close')"
+          :icon="Close"
+        >
         </ElButton>
         <div class="header-text">
           {{ pathname }}

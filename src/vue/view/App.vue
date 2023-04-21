@@ -99,7 +99,7 @@ const onNewFile = async () => {
             <ElCard class="button-card" @click="onOpen(file)">
               <ElRow :justify="'space-between'" :align="'middle'">
                 <h2 class="header-text">
-                  {{ file.title == '' ? 'Untitled' : file.title }}
+                  {{ file.pathname }}
                 </h2>
                 <span>{{ readableDate(file.updatedTime) }}</span>
               </ElRow>
@@ -109,7 +109,7 @@ const onNewFile = async () => {
       </ElScrollbar>
     </ElMain>
   </ElContainer>
-  <Editor v-else :pathname="pathname" @close="onClose()" />
+  <Editor v-else :key="pathname" :pathname="pathname" @close="onClose()" />
 </template>
 <style lang="scss" scoped>
 .root {
