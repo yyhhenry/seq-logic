@@ -25,7 +25,11 @@ export const getFiles = async () => {
     const files = await (await db).get('seq-logic', 'files');
     return files || [];
 };
-export const updateFile = async (file: FileRecord) => {
+export const updateFile = async (pathname: string) => {
+    const file = {
+        pathname,
+        updatedTime: Date.now(),
+    };
     const files = await getFiles();
     const index = files.findIndex(f => f.pathname === file.pathname);
     if (index === -1) {

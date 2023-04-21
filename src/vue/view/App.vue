@@ -20,6 +20,7 @@ import { readableDate } from '@/util/readable';
 import { DocumentAdd, Download } from '@element-plus/icons-vue';
 import { getBlankDiagramStorage } from '@/util/SeqLogic';
 import { websiteName } from '@/util/websiteName';
+import { updateFile } from '@/util/database';
 const title = websiteName;
 useTitle(title);
 useDark();
@@ -34,6 +35,7 @@ const onClose = async () => {
 };
 const onOpen = async (file: FileRecord) => {
   pathname.value = file.pathname;
+  updateFile(pathname.value);
 };
 const onImport = async () => {
   const { filePaths } = await remote.main['dialog.showOpenDialog']({
@@ -49,6 +51,7 @@ const onImport = async () => {
     return;
   }
   pathname.value = filePaths[0];
+  updateFile(pathname.value);
 };
 const onNewFile = async () => {
   const { filePath } = await remote.main['dialog.showSaveDialog']({
@@ -62,6 +65,10 @@ const onNewFile = async () => {
   }
   await remote.fs.writeFile(filePath, JSON.stringify(getBlankDiagramStorage()));
   pathname.value = filePath;
+  updateFile(pathname.value);
+};
+const getTitleOf = (pathname: string) => {
+  return remote.path.basename(pathname, '.seq.json');
 };
 </script>
 <template>
@@ -98,7 +105,7 @@ const onNewFile = async () => {
             <ElCard class="button-card" @click="onOpen(file)">
               <ElRow :justify="'space-between'" :align="'middle'">
                 <h2 class="header-text">
-                  {{ file.pathname }}
+                  {{ getTitleOf(file.pathname) }}
                 </h2>
                 <span>{{ readableDate(file.updatedTime) }}</span>
               </ElRow>
