@@ -27,11 +27,13 @@ export function handleMainRemote() {
     if (isDevelopmentMode) {
         const flatModule = `
 import type { app, dialog } from 'electron';
-export const remoteList = ${JSON.stringify(names)};
+export const remoteList = [
+${names.map(name => `    '${name}',`).join('\n')}
+];
 export type MainRemote = {
-${names.map(name => `    '${name}': typeof ${name}`).join(';\n')}
+${names.map(name => `    '${name}': typeof ${name};`).join('\n')}
 };
-    `.trim();
+`.trimStart();
         fs.writeFile(
             path.resolve(process.cwd(), 'src/electron/mainRemote.ts'),
             flatModule
