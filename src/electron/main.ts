@@ -1,10 +1,8 @@
 import { app, BrowserWindow, Menu } from 'electron';
 import path from 'path';
-import { handleWholeModule } from './handler/handleWholeModule';
-import { wholeHandler } from './handler/handler';
 import { isDevelopmentMode } from './isDevelopmentMode';
-// 禁用硬件加速的确会导致性能的大幅下降
-// app.disableHardwareAcceleration();
+import { handleMainRemote } from './handler';
+
 const mainFolder = path.dirname(__dirname);
 const resourcesFolder = path.join(mainFolder, '../resources');
 if (!isDevelopmentMode) {
@@ -18,6 +16,7 @@ const createWindow = () => {
         minHeight: 600,
         webPreferences: {
             preload: path.join(mainFolder, 'electron/preload.js'),
+            nodeIntegration: true,
         },
         show: false,
     });
@@ -31,7 +30,7 @@ const createWindow = () => {
 };
 
 app.whenReady().then(async () => {
-    await handleWholeModule(wholeHandler);
+    handleMainRemote();
     createWindow();
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {

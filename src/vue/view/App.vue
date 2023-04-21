@@ -9,7 +9,7 @@ import {
   ElRow,
   ElScrollbar,
 } from 'element-plus';
-import { remote } from '@/remote';
+import remote from '@/remote';
 import { useDark, useTitle } from '@vueuse/core';
 import { promiseRef } from '@/util/promiseRef';
 import LRMenu from './components/LRMenu.vue';
@@ -19,7 +19,8 @@ import { getFiles, FileRecord } from '@/util/database';
 import { readableDate } from '@/util/readable';
 import { DocumentAdd, Download } from '@element-plus/icons-vue';
 import { getBlankDiagramStorage } from '@/util/SeqLogic';
-const title = promiseRef(remote.content.title());
+import { websiteName } from '@/util/websiteName';
+const title = websiteName;
 useTitle(title);
 useDark();
 const pathname = ref<string>();
@@ -35,34 +36,32 @@ const onOpen = async (file: FileRecord) => {
   pathname.value = file.pathname;
 };
 const onImport = async () => {
-  const fileList = await remote.fs.openFile({
+  const { filePaths } = await remote.main['dialog.showOpenDialog']({
     title: 'Import Seq Logic Project',
-    defaultPath: await remote.fs.getPath('extra'),
+    defaultPath: await remote.getExtraPath(),
     filters: [
       { name: 'Seq Logic', extensions: ['seq.json'] },
       { name: 'JSON', extensions: ['json'] },
     ],
     properties: ['createDirectory', 'openFile'],
   });
-  if (fileList === undefined || fileList.length != 1) {
+  if (filePaths.length != 1) {
     return;
   }
-  const file = fileList[0];
-  pathname.value = file;
+  pathname.value = filePaths[0];
 };
 const onNewFile = async () => {
-  const fileList = await remote.fs.saveFile({
+  const { filePath } = await remote.main['dialog.showSaveDialog']({
     title: 'New Seq Logic Project',
-    defaultPath: await remote.fs.getPath('extra'),
+    defaultPath: await remote.getExtraPath(),
     filters: [{ name: 'Seq Logic', extensions: ['seq.json'] }],
     properties: ['createDirectory'],
   });
-  if (fileList === undefined || fileList.length != 1) {
+  if (filePath === undefined) {
     return;
   }
-  const file = fileList[0];
-  await remote.fs.writeFile(file, JSON.stringify(getBlankDiagramStorage()));
-  pathname.value = file;
+  await remote.fs.writeFile(filePath, JSON.stringify(getBlankDiagramStorage()));
+  pathname.value = filePath;
 };
 </script>
 <template>

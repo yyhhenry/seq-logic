@@ -1,33 +1,41 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { WholeRemote } from './bridge';
+import { type MainRemote, remoteList } from './mainRemote';
+import fs from 'fs/promises';
+import path from 'path';
+import { v4 as uuid } from 'uuid';
+import { isDevelopmentMode } from './isDevelopmentMode';
 
-type DefOf<T extends {} = {}> = {
-    [Key in keyof T]: 0;
+type PromiseFunction<T> = T extends (...args: infer A) => infer R
+    ? (...args: A) => Promise<R>
+    : never;
+
+type Main = {
+    [K in keyof MainRemote]: PromiseFunction<MainRemote[K]>;
 };
-const invokerOf = <T extends keyof WholeRemote>(
-    name: T,
-    list: DefOf<WholeRemote[T]>
-) => {
-    const result: Record<string, unknown> = {};
-    for (const key of Object.keys(list)) {
-        result[key] = (...args: unknown[]) =>
-            ipcRenderer.invoke(`${name}.${key}`, ...args);
-    }
-    return result as WholeRemote[T];
+const main = Object.fromEntries(
+    remoteList.map(
+        name =>
+            [name, (...args: any[]) => ipcRenderer.invoke(name, ...args)] as [
+                string,
+                any
+            ]
+    )
+) as Main;
+
+const remote = {
+    fs,
+    path,
+    uuid,
+    main,
+    getExtraPath: async () => {
+        return path.join(
+            isDevelopmentMode
+                ? process.cwd()
+                : path.dirname(await main['app.getPath']('exe')),
+            'extraFiles'
+        );
+    },
 };
-const content = invokerOf('content', {
-    title: 0,
-    uuid: 0,
-});
-const fs = invokerOf('fs', {
-    openFile: 0,
-    getPath: 0,
-    readFile: 0,
-    readDir: 0,
-    getFileSize: 0,
-    joinPath: 0,
-    resolvePath: 0,
-    saveFile: 0,
-});
-const remote: WholeRemote = { content, fs };
+type Remote = typeof remote;
 contextBridge.exposeInMainWorld('remote', remote);
+export default Remote;

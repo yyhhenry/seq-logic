@@ -1,2 +1,3 @@
-import type { WholeRemote } from '../electron/bridge';
-export const remote = (window as unknown as { remote: WholeRemote }).remote;
+import type Remote from '../electron/preload';
+const remote = (window as unknown as { remote: Remote }).remote;
+export default remote;
