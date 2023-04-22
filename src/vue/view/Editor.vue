@@ -8,7 +8,6 @@ import {
 } from 'element-plus';
 import { Close } from '@element-plus/icons-vue';
 import LRMenu from './components/LRMenu.vue';
-import remote from '@/remote';
 import { deleteFile } from '@/util/database';
 import { Diagram, isDiagramStorage } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
