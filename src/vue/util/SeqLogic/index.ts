@@ -3,15 +3,15 @@ import { v4 as uuid } from 'uuid';
 import { MaybeObject, isObjectMaybe } from '../types';
 import { isObjectOf } from '../types';
 import remote from '@/remote';
-interface BasePoint {
+interface Coordinate {
     x: number;
     y: number;
 }
-export const isBasePoint = <T extends BasePoint>(
+export const isCoordinate = <T extends Coordinate>(
     u: unknown
-): u is BasePoint & MaybeObject<T> => {
+): u is Coordinate & MaybeObject<T> => {
     return (
-        isObjectMaybe<BasePoint>(u) &&
+        isObjectMaybe<Coordinate>(u) &&
         typeof u.x === 'number' &&
         typeof u.y === 'number'
     );
@@ -27,60 +27,60 @@ export const isClock = (u: unknown): u is Clock => {
         typeof u.duration === 'number'
     );
 };
-export interface Point extends BasePoint {
+export interface Node extends Coordinate {
     powered: boolean;
     clock?: Clock;
 }
-export const isPoint = (u: unknown): u is Point => {
+export const isNode = (u: unknown): u is Node => {
     return (
-        isBasePoint<Point>(u) &&
+        isCoordinate<Node>(u) &&
         typeof u.powered === 'boolean' &&
         (u.clock === undefined || isClock(u.clock))
     );
 };
-export interface Line {
+export interface Wire {
     start: string;
     end: string;
     not: boolean;
 }
-export const isLine = (u: unknown): u is Line => {
+export const isWire = (u: unknown): u is Wire => {
     return (
-        isObjectMaybe<Line>(u) &&
+        isObjectMaybe<Wire>(u) &&
         typeof u.start === 'string' &&
         typeof u.end === 'string' &&
         typeof u.not === 'boolean'
     );
 };
-export interface Text extends BasePoint {
+export interface Text extends Coordinate {
     text: string;
     size: string;
 }
 export const isText = (u: unknown): u is Text => {
     return (
-        isBasePoint<Text>(u) &&
+        isCoordinate<Text>(u) &&
         typeof u.text === 'string' &&
         typeof u.size === 'string'
     );
 };
-export interface Viewport extends BasePoint {
+export interface Viewport extends Coordinate {
     scale: number;
 }
 export const isViewport = (u: unknown): u is Viewport => {
     return (
-        isBasePoint<Viewport>(u) && typeof u.scale === 'number' && u.scale > 0
+        isCoordinate<Viewport>(u) && typeof u.scale === 'number' && u.scale > 0
     );
 };
 export interface DiagramStorage {
-    points: Record<string, Point>;
-    lines: Record<string, Line>;
+    nodes: Record<string, Node>;
+    wires: Record<string, Wire>;
     texts: Record<string, Text>;
     viewport: Viewport;
 }
 export const isDiagramStorage = (u: any): u is DiagramStorage => {
     return (
         isObjectMaybe<DiagramStorage>(u) &&
-        isObjectOf(u.points, isPoint) &&
-        isObjectOf(u.lines, isLine) &&
+        isObjectOf(u.nodes, isNode) &&
+        isObjectOf(u.wires, isWire) &&
         isObjectOf(u.texts, isText) &&
         isViewport(u.viewport)
     );
@@ -181,20 +181,20 @@ export class History<T> {
 /**
  * A diagram.
  *
- * When updating the position of the points and texts, no need to re-parse the whole diagram. But you need to call saveHistory() after the update.
- * You should not update the existence of the points, lines and texts. You should call add and remove instead.
+ * When updating the coordinate of the nodes and texts, no need to re-parse the whole diagram. But you need to call saveHistory() after the update.
+ * You should not update the existence of the nodes, wires and texts. You should call add and remove instead.
  * When updating the viewport, no need to call anything and there is no history.
  */
 export class Diagram {
-    points: History<Point>;
-    lines: History<Line>;
+    nodes: History<Node>;
+    wires: History<Wire>;
     texts: History<Text>;
     viewport: Viewport;
 
     private status: Map<string, Status>;
     private toggle: Map<number, Set<string>>;
     private current: number;
-    private lineWithPoint: Map<string, Set<string>>;
+    private wireWithNode: Map<string, Set<string>>;
     private groupRoot: Map<string, string>;
     private updatePrec: Map<string, Set<string>>;
     private updateSucc: Map<string, Set<string>>;
@@ -206,11 +206,11 @@ export class Diagram {
         function recordToMap<T>(record: Record<string, T>) {
             return new History(new Map(Object.entries(record)));
         }
-        this.points = recordToMap(storage.points);
-        this.lines = recordToMap(storage.lines);
+        this.nodes = recordToMap(storage.nodes);
+        this.wires = recordToMap(storage.wires);
         this.texts = recordToMap(storage.texts);
         this.status = new Map(
-            [...this.points.entries()].map(([id, { powered }]) => [
+            [...this.nodes.entries()].map(([id, { powered }]) => [
                 id,
                 { active: powered, powered },
             ])
@@ -218,7 +218,7 @@ export class Diagram {
         this.toggle = new Map();
         this.current = 0;
         this.viewport = storage.viewport;
-        this.lineWithPoint = new Map();
+        this.wireWithNode = new Map();
         this.groupRoot = new Map();
         this.updatePrec = new Map();
         this.updateSucc = new Map();
@@ -232,59 +232,59 @@ export class Diagram {
             }
         }
     }
-    private getGroupRoot(pointId: string): string {
-        const fa = this.groupRoot.get(pointId)!;
-        if (fa == pointId) {
-            return pointId;
+    private getGroupRoot(nodeId: string): string {
+        const fa = this.groupRoot.get(nodeId)!;
+        if (fa == nodeId) {
+            return nodeId;
         }
         const result = this.getGroupRoot(fa);
-        this.groupRoot.set(pointId, result);
+        this.groupRoot.set(nodeId, result);
         return result;
     }
     /**
      * Parse the diagram and build the data structure.
      */
     private parse() {
-        this.lineWithPoint = new Map(
-            [...this.points.entries()].map(([id]) => [id, new Set()])
+        this.wireWithNode = new Map(
+            [...this.nodes.entries()].map(([id]) => [id, new Set()])
         );
-        for (const [id, line] of this.lines.entries()) {
-            this.lineWithPoint.get(line.start)!.add(id);
-            this.lineWithPoint.get(line.end)!.add(id);
+        for (const [id, wire] of this.wires.entries()) {
+            this.wireWithNode.get(wire.start)!.add(id);
+            this.wireWithNode.get(wire.end)!.add(id);
         }
         for (const [id, status] of this.status.entries()) {
-            status.powered = this.points.get(id)!.powered;
+            status.powered = this.nodes.get(id)!.powered;
         }
         this.groupRoot = new Map(
-            [...this.points.entries()].map(([id]) => [id, id])
+            [...this.nodes.entries()].map(([id]) => [id, id])
         );
-        for (const [_id, line] of this.lines.entries()) {
-            if (line.not) {
+        for (const [_id, wire] of this.wires.entries()) {
+            if (wire.not) {
                 continue;
             }
-            const start = this.getGroupRoot(line.start);
-            const end = this.getGroupRoot(line.end);
+            const start = this.getGroupRoot(wire.start);
+            const end = this.getGroupRoot(wire.end);
             if (start == end) {
                 continue;
             }
             this.groupRoot.set(start, end);
             this.status.get(end)!.powered ||= this.status.get(start)!.powered;
         }
-        for (const id of this.points.keys()) {
+        for (const id of this.nodes.keys()) {
             this.getGroupRoot(id);
         }
         this.updatePrec = new Map(
-            [...this.points.entries()].map(([id]) => [id, new Set()])
+            [...this.nodes.entries()].map(([id]) => [id, new Set()])
         );
         this.updateSucc = new Map(
-            [...this.points.entries()].map(([id]) => [id, new Set()])
+            [...this.nodes.entries()].map(([id]) => [id, new Set()])
         );
-        for (const [_id, line] of this.lines.entries()) {
-            if (!line.not) {
+        for (const [_id, wire] of this.wires.entries()) {
+            if (!wire.not) {
                 continue;
             }
-            const start = this.getGroupRoot(line.start);
-            const end = this.getGroupRoot(line.end);
+            const start = this.getGroupRoot(wire.start);
+            const end = this.getGroupRoot(wire.end);
             this.updatePrec.get(end)!.add(start);
             this.updateSucc.get(start)!.add(end);
         }
@@ -297,7 +297,6 @@ export class Diagram {
         const toggle = this.toggle.get(this.current);
         if (toggle !== undefined) {
             const succList = new Set<string>();
-            console.log(this.current, [...toggle]);
             for (const id of toggle) {
                 const status = this.status.get(id)!;
                 status.active = !status.active;
@@ -312,15 +311,15 @@ export class Diagram {
         }
         this.toggle.delete(this.current++);
     }
-    private activate(pointId: string) {
-        const status = this.status.get(pointId)!;
+    private activate(nodeId: string) {
+        const status = this.status.get(nodeId)!;
         let result = status.powered;
-        for (const prec of this.updatePrec.get(pointId)!) {
+        for (const prec of this.updatePrec.get(nodeId)!) {
             result ||= !this.status.get(prec)!.active;
         }
         if (result == status.active) {
             if (status.nextTick !== undefined) {
-                (this.toggle.get(status.nextTick) ?? new Map()).delete(pointId);
+                (this.toggle.get(status.nextTick) ?? new Map()).delete(nodeId);
                 status.nextTick = undefined;
             }
         } else {
@@ -330,69 +329,72 @@ export class Diagram {
                 if (!this.toggle.has(status.nextTick)) {
                     this.toggle.set(status.nextTick, new Set());
                 }
-                this.toggle.get(status.nextTick)!.add(pointId);
+                this.toggle.get(status.nextTick)!.add(nodeId);
             }
         }
     }
-    getStatus(pointId: string) {
-        return this.status.get(this.getGroupRoot(pointId)!)!;
+    getStatus(nodeId: string) {
+        return this.status.get(this.getGroupRoot(nodeId)!)!;
     }
     /**
      * Save the history to handle undo and redo.
      */
     saveHistory() {
         this.modified = true;
-        this.points.saveHistory();
-        this.lines.saveHistory();
+        this.nodes.saveHistory();
+        this.wires.saveHistory();
         this.texts.saveHistory();
     }
     undo() {
-        this.points.undo();
-        this.lines.undo();
+        this.nodes.undo();
+        this.wires.undo();
         this.texts.undo();
         this.parse();
     }
     redo() {
-        this.points.redo();
-        this.lines.redo();
+        this.nodes.redo();
+        this.wires.redo();
         this.texts.redo();
         this.parse();
     }
-    addPoint(point: Point) {
+    addNode(node: Node) {
         this.saveHistory();
         const id = uuid();
-        this.points.set(id, point);
+        this.nodes.set(id, node);
         this.parse();
+        return id;
     }
-    addLine(line: Line) {
+    addWire(wire: Wire) {
         this.saveHistory();
         const id = uuid();
-        this.lines.set(id, line);
+        this.wires.set(id, wire);
         this.parse();
+        return id;
     }
     addText(text: Text) {
         this.saveHistory();
         const id = uuid();
         this.texts.set(id, text);
+        return id;
     }
-    removePoint(id: string) {
+    removeNode(id: string) {
         this.saveHistory();
-        if (this.points.has(id)) {
-            this.points.delete(id);
-            for (const lineId of this.lineWithPoint.get(id)!) {
-                this.lines.delete(lineId);
+        if (this.nodes.has(id)) {
+            this.nodes.delete(id);
+            for (const wireId of this.wireWithNode.get(id)!) {
+                this.wires.delete(wireId);
             }
         } else {
-            throw new Error('point not found');
+            throw new Error('node not found');
         }
         this.parse();
     }
-    removeLine(id: string) {
+    removeWire(id: string) {
         this.saveHistory();
-        if (this.lines.has(id)) {
-            this.lines.delete(id);
+        if (this.wires.has(id)) {
+            this.wires.delete(id);
         } else {
-            throw new Error('line not found');
+            throw new Error('wire not found');
         }
         this.parse();
     }
@@ -406,8 +408,8 @@ export class Diagram {
     }
     toStorage(): DiagramStorage {
         return clone({
-            points: Object.fromEntries(this.points.entries()),
-            lines: Object.fromEntries(this.lines.entries()),
+            nodes: Object.fromEntries(this.nodes.entries()),
+            wires: Object.fromEntries(this.wires.entries()),
             texts: Object.fromEntries(this.texts.entries()),
             viewport: this.viewport,
         });
@@ -430,8 +432,8 @@ export class Diagram {
 
 export const getBlankDiagramStorage = (): DiagramStorage => {
     return {
-        points: {},
-        lines: {},
+        nodes: {},
+        wires: {},
         texts: {},
         viewport: {
             x: 0,

@@ -1,1 +1,8 @@
-{"points":{},"lines":{},"texts":{},"viewport":{"x":0,"y":0,"scale":1}}
+{
+  "nodes": {
+    "0": { "x": 0, "y": 0, "powered": false }
+  },
+  "wires": {},
+  "texts": {},
+  "viewport": { "x": 0, "y": 0, "scale": 1 }
+}
