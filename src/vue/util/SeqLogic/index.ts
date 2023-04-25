@@ -178,6 +178,43 @@ export class History<T> {
         return true;
     }
 }
+export const remarkId = (storage: DiagramStorage) => {
+    const nodeIdMapping = new Map(
+        [...Object.keys(storage.nodes)].map(
+            id => [id, uuid()] satisfies [string, string]
+        )
+    );
+    const nodes = Object.fromEntries(
+        Object.entries(storage.nodes).map(
+            ([id, node]) =>
+                [nodeIdMapping.get(id)!, node] satisfies [string, Node]
+        )
+    );
+    const wires = Object.fromEntries(
+        Object.values(storage.wires).map(
+            wire =>
+                [
+                    uuid(),
+                    {
+                        start: nodeIdMapping.get(wire.start)!,
+                        end: nodeIdMapping.get(wire.end)!,
+                        not: wire.not,
+                    },
+                ] satisfies [string, Wire]
+        )
+    );
+    const texts = Object.fromEntries(
+        Object.values(storage.texts).map(
+            text => [uuid(), text] satisfies [string, Text]
+        )
+    );
+    return clone({
+        nodes,
+        wires,
+        texts,
+        viewport: storage.viewport,
+    } satisfies DiagramStorage);
+};
 /**
  * A diagram.
  *
@@ -333,17 +370,47 @@ export class Diagram {
             }
         }
     }
-    getStatus(nodeId: string) {
+    extract(nodeIds: Set<string>, textIds: Set<string>) {
+        const wireIds = new Set(
+            [...this.wires.entries()]
+                .filter(([_id, wire]) => {
+                    return nodeIds.has(wire.start) && nodeIds.has(wire.end);
+                })
+                .map(([id]) => id)
+        );
+        const nodes = Object.fromEntries(
+            [...this.nodes.entries()].filter(([id]) => nodeIds.has(id))
+        );
+        const wires = Object.fromEntries(
+            [...this.wires.entries()].filter(([id]) => wireIds.has(id))
+        );
+        const texts = Object.fromEntries(
+            [...this.texts.entries()].filter(([id]) => textIds.has(id))
+        );
+        return {
+            nodes,
+            wires,
+            texts,
+            viewport: this.viewport,
+        } satisfies DiagramStorage;
+    }
+    merge(storage: DiagramStorage) {
+        // TODO
+    }
+    getNodeStatus(nodeId: string) {
         return this.status.get(this.getGroupRoot(nodeId)!)!;
     }
     /**
      * Save the history to handle undo and redo.
      */
-    saveHistory() {
+    saveHistory(parse = true) {
         this.modified = true;
         this.nodes.saveHistory();
         this.wires.saveHistory();
         this.texts.saveHistory();
+        if (parse) {
+            this.parse();
+        }
     }
     undo() {
         this.nodes.undo();
@@ -358,21 +425,16 @@ export class Diagram {
         this.parse();
     }
     addNode(node: Node) {
-        this.saveHistory();
         const id = uuid();
         this.nodes.set(id, node);
-        this.parse();
         return id;
     }
     addWire(wire: Wire) {
-        this.saveHistory();
         const id = uuid();
         this.wires.set(id, wire);
-        this.parse();
         return id;
     }
     addText(text: Text) {
-        this.saveHistory();
         const id = uuid();
         this.texts.set(id, text);
         return id;
@@ -418,7 +480,7 @@ export class Diagram {
         const content = await remote.fs.readFile(pathname, 'utf-8');
         const diagram = JSON.parse(content);
         if (isDiagramStorage(diagram)) {
-            return diagram;
+            return new Diagram(diagram);
         } else {
             throw new Error('Invalid file');
         }

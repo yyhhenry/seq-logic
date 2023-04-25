@@ -14,7 +14,9 @@ import { deleteFile } from '@/util/database';
 import { Diagram } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
 import { readableFilename } from '@/util/readable';
-import { ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { useDark, useMousePressed } from '@vueuse/core';
+import { useMouseInElement } from '@vueuse/core';
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
@@ -42,27 +44,24 @@ const onClose = async () => {
     })
     .catch(() => {});
 };
-const diagram = promiseRef(
-  getDiagram().then(diagram => {
-    // Test log
-    console.log(diagram);
-    return diagram;
-  })
-);
+const diagram = promiseRef(getDiagram());
 
 // Default action:
 // wheel to zoom
 // ctrl drag to move
 // Show a error message if the operation is invalid
-// press A or click "Add node(A)" to clear focus and to status: add-node
-// press W or click "Add wire(W)" when focus contains any node to clear non-node focus and to status: add-wire
-// press T or click "Add text(T)" to clear focus to status: add-text
-// press Delete or click "Delete(Del)" when focus contains any node, wire or text to delete them
+// press A or click "Add node(A)" to clear selected items and to status: add-node
+// press W or click "Add wire(W)" when selected items contains any node to clear non-node selected items and to status: add-wire
+// press T or click "Add text(T)" to clear selected items to status: add-text
+// press Delete or click "Delete(Del)" when selected items contains any node, wire or text to delete them
+// double click a node to status: edit-node
+// double click a text to status: edit-text
 
 // status: idle
 // drag to select with a box
-// click to select one node, wire or text
 // shift click to select multiple (XOR)
+// click to select one node, wire or text
+// drag on selected to move selected nodes, wires and texts
 
 // status: add-node
 // preview a node at the mouse position
@@ -72,19 +71,125 @@ const diagram = promiseRef(
 
 // status: add-wire
 // click node to add wire from all selected nodes to the clicked node
-// click blank to add noe and add wire from all selected nodes to the clicked position
+// click blank to add one node and add wire from all selected nodes to the added node
 
 // status: add-text
 // preview a text like "New Text" at the mouse position
-// click blank to add text to the clicked node
-type EditorStatus = 'idle' | 'add-node' | 'add-wire' | 'add-text';
+// click to add text to the clicked position
+
+// status: edit-node
+// show dialog to edit node and set the power
+
+// status: edit-wire
+// show dialog to edit wire and set the not gate
+
+// status: edit-text
+// show dialog to edit text and set the scale
+type EditorStatus =
+  | 'idle'
+  | 'add-node'
+  | 'add-wire'
+  | 'add-text'
+  | 'edit-node'
+  | 'edit-wire'
+  | 'edit-text';
 const editorStatus = ref<EditorStatus>('idle');
-type EditorFocus = Record<'node' | 'wire' | 'text', Set<string>>;
-const editorFocus = ref<EditorFocus>({
+type ItemType = 'node' | 'wire' | 'text';
+type SelectedItems = Record<ItemType, Set<string>>;
+const selectedItems = ref<SelectedItems>({
   node: new Set(),
   wire: new Set(),
   text: new Set(),
 });
+const svgRef = ref<SVGSVGElement>();
+const mouse = useMouseInElement(svgRef);
+const mousePressed = useMousePressed();
+const onUndo = () => {
+  if (diagram.value) {
+    diagram.value.undo();
+  }
+};
+const onRedo = () => {
+  if (diagram.value) {
+    diagram.value.redo();
+  }
+};
+const onKeyPress = (e: KeyboardEvent) => {
+  if (e.key === 'z') {
+    if (e.ctrlKey) {
+      onUndo();
+    }
+  }
+  if (e.key === 'y') {
+    if (e.ctrlKey) {
+      onRedo();
+    }
+  }
+  if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) {
+  } else {
+    if (e.key === 'a') {
+      editorStatus.value = 'add-node';
+    }
+    if (e.key === 'w') {
+      editorStatus.value = 'add-wire';
+    }
+    if (e.key === 't') {
+      editorStatus.value = 'add-text';
+    }
+  }
+};
+onMounted(() => {
+  window.addEventListener('keypress', onKeyPress);
+});
+onUnmounted(() => {
+  window.removeEventListener('keypress', onKeyPress);
+});
+const onWheel = (e: WheelEvent) => {
+  if (diagram.value) {
+    const [x, y] = [mouse.elementX.value, mouse.elementY.value];
+    diagram.value.viewport.x -= x / diagram.value.viewport.scale;
+    diagram.value.viewport.y -= y / diagram.value.viewport.scale;
+    diagram.value.viewport.scale *= 1 + e.deltaY / 1000;
+    diagram.value.viewport.x += x / diagram.value.viewport.scale;
+    diagram.value.viewport.y += y / diagram.value.viewport.scale;
+    e.stopPropagation();
+  }
+};
+const onMove = (e: MouseEvent) => {
+  if (e.ctrlKey) {
+    if (mousePressed.pressed.value) {
+      if (!diagram.value) return;
+      diagram.value.viewport.x += e.movementX / diagram.value.viewport.scale;
+      diagram.value.viewport.y += e.movementY / diagram.value.viewport.scale;
+      e.stopPropagation();
+    }
+  }
+  // TODO: implement
+};
+const onClick = (e: MouseEvent, itemType: ItemType, id: string) => {
+  if (editorStatus.value === 'idle') {
+    if (e.shiftKey) {
+      if (selectedItems.value[itemType].has(id)) {
+        selectedItems.value[itemType].delete(id);
+      } else {
+        selectedItems.value[itemType].add(id);
+      }
+      e.stopPropagation();
+    } else {
+      if (!selectedItems.value[itemType].has(id)) {
+        selectedItems.value = {
+          node: new Set(),
+          wire: new Set(),
+          text: new Set(),
+        };
+        selectedItems.value[itemType].add(id);
+        e.stopPropagation();
+      }
+    }
+    // TODO: implement
+  }
+  // TODO: implement
+};
 </script>
 <template>
   <ElContainer class="root">
@@ -107,11 +212,51 @@ const editorFocus = ref<EditorFocus>({
     <ElMain class="no-padding no-scroll">
       <ElContainer class="full-height full-width">
         <ElMain class="no-padding no-scroll">
-          <svg class="full-height full-width"></svg>
+          <svg
+            class="full-height full-width"
+            ref="svgRef"
+            v-if="diagram !== undefined"
+            @mousemove="e => onMove(e)"
+            @wheel="e => onWheel(e)"
+          >
+            <g
+              :transform="`scale(${diagram?.viewport.scale}), translate(${diagram?.viewport.x}, ${diagram?.viewport.y})`"
+            >
+              <g>
+                <g v-for="[id, wire] of diagram.wires.entries()">
+                  <path
+                    :stroke="'var(--color-text)'"
+                    :stroke-width="2"
+                    :fill="'none'"
+                  />
+                </g>
+              </g>
+              <g>
+                <g
+                  v-for="[id, node] of diagram.nodes.entries()"
+                  @click="e => onClick(e, 'node', id)"
+                >
+                  <circle
+                    :cx="node.x"
+                    :cy="node.y"
+                    :r="10"
+                    :fill="'var(--color-text)'"
+                  />
+                </g>
+              </g>
+            </g>
+          </svg>
         </ElMain>
         <ElFooter class="editor-footer" height="2rem">
-          <ElRow :align="'middle'">
-            <div>{{ editorStatus }}</div>
+          <ElRow class="full-height" :align="'middle'">
+            <div class="margin-in-line">{{ editorStatus }}</div>
+            <div class="margin-in-line" v-if="diagram !== undefined">
+              {{
+                `${diagram.viewport.x.toFixed(2)}:${diagram.viewport.y.toFixed(
+                  2
+                )} # ${diagram.viewport.scale.toFixed(2)}x`
+              }}
+            </div>
           </ElRow>
         </ElFooter>
       </ElContainer>
@@ -147,5 +292,8 @@ const editorFocus = ref<EditorFocus>({
 .editor-footer {
   background-color: var(--color-background-soft);
   user-select: none;
+}
+.margin-in-line {
+  margin: 0 10px;
 }
 </style>
