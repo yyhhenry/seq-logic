@@ -387,15 +387,33 @@ export class Diagram {
         const texts = Object.fromEntries(
             [...this.texts.entries()].filter(([id]) => textIds.has(id))
         );
-        return {
+        return clone({
             nodes,
             wires,
             texts,
             viewport: this.viewport,
-        } satisfies DiagramStorage;
+        }) satisfies DiagramStorage as DiagramStorage;
     }
     merge(storage: DiagramStorage) {
-        // TODO
+        storage = remarkId(storage);
+        [...Object.values(storage.nodes)].forEach((node) => {
+            node.x += this.viewport.x - storage.viewport.x;
+            node.y += this.viewport.y - storage.viewport.y;
+        });
+        [...Object.values(storage.texts)].forEach((text) => {
+            text.x += this.viewport.x - storage.viewport.x;
+            text.y += this.viewport.y - storage.viewport.y;
+        });
+        for(const [id, node] of Object.entries(storage.nodes)) {
+            this.nodes.set(id, node);
+        }
+        for(const [id, wire] of Object.entries(storage.wires)) {
+            this.wires.set(id, wire);
+        }
+        for(const [id, text] of Object.entries(storage.texts)) {
+            this.texts.set(id, text);
+        }
+        this.saveHistory();
     }
     getNodeStatus(nodeId: string) {
         return this.status.get(this.getGroupRoot(nodeId)!)!;

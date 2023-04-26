@@ -53,7 +53,8 @@ const diagram = promiseRef(getDiagram());
 // press A or click "Add node(A)" to clear selected items and to status: add-node
 // press W or click "Add wire(W)" when selected items contains any node to clear non-node selected items and to status: add-wire
 // press T or click "Add text(T)" to clear selected items to status: add-text
-// press Delete or click "Delete(Del)" when selected items contains any node, wire or text to delete them
+// press Delete or click "Delete(Del)" when selected items contains any node, wire or text to delete them and to status: idle
+// press Esc or click "Cancel" to status: idle
 // double click a node to status: edit-node
 // double click a text to status: edit-text
 
@@ -61,13 +62,13 @@ const diagram = promiseRef(getDiagram());
 // drag to select with a box
 // shift click to select multiple (XOR)
 // click to select one node, wire or text
+// click blank to clear selected items
 // drag on selected to move selected nodes, wires and texts
 
 // status: add-node
 // preview a node at the mouse position
 // click to add node
 // click existing node to cancel and to status: idle
-// press A to cancel and to status: idle
 
 // status: add-wire
 // click node to add wire from all selected nodes to the clicked node
@@ -129,12 +130,28 @@ const onKeyPress = (e: KeyboardEvent) => {
   } else {
     if (e.key === 'a') {
       editorStatus.value = 'add-node';
-    }
-    if (e.key === 'w') {
+    } else if (e.key === 'w') {
       editorStatus.value = 'add-wire';
-    }
-    if (e.key === 't') {
+    } else if (e.key === 't') {
       editorStatus.value = 'add-text';
+    } else if (e.key === 'Escape') {
+      editorStatus.value = 'idle';
+    } else if (e.key === 'Delete') {
+      selectedItems.value.node.forEach(id => {
+        diagram.value?.removeNode(id);
+      });
+      selectedItems.value.wire.forEach(id => {
+        diagram.value?.removeWire(id);
+      });
+      selectedItems.value.text.forEach(id => {
+        diagram.value?.removeText(id);
+      });
+      selectedItems.value = {
+        node: new Set(),
+        wire: new Set(),
+        text: new Set(),
+      };
+      editorStatus.value = 'idle';
     }
   }
 };
@@ -163,28 +180,42 @@ const onMove = (e: MouseEvent) => {
       diagram.value.viewport.y += e.movementY / diagram.value.viewport.scale;
       e.stopPropagation();
     }
+  } else {
+    if (mousePressed.pressed.value) {
+    }
   }
   // TODO: implement
 };
-const onClick = (e: MouseEvent, itemType: ItemType, id: string) => {
+const onClick = (e: MouseEvent, itemType: ItemType | 'blank', id: string) => {
   if (editorStatus.value === 'idle') {
     if (e.shiftKey) {
-      if (selectedItems.value[itemType].has(id)) {
-        selectedItems.value[itemType].delete(id);
+      if (itemType === 'blank') {
       } else {
-        selectedItems.value[itemType].add(id);
+        if (selectedItems.value[itemType].has(id)) {
+          selectedItems.value[itemType].delete(id);
+        } else {
+          selectedItems.value[itemType].add(id);
+        }
       }
       e.stopPropagation();
     } else {
-      if (!selectedItems.value[itemType].has(id)) {
+      if (itemType === 'blank') {
         selectedItems.value = {
           node: new Set(),
           wire: new Set(),
           text: new Set(),
         };
-        selectedItems.value[itemType].add(id);
-        e.stopPropagation();
+      } else {
+        if (!selectedItems.value[itemType].has(id)) {
+          selectedItems.value = {
+            node: new Set(),
+            wire: new Set(),
+            text: new Set(),
+          };
+          selectedItems.value[itemType].add(id);
+        }
       }
+      e.stopPropagation();
     }
     // TODO: implement
   }
