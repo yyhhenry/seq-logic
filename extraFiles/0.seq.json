@@ -1,8 +1,11 @@
 {
   "nodes": {
-    "0": { "x": 0, "y": 0, "powered": false }
+    "0": { "x": 0, "y": 0, "powered": false },
+    "1": { "x": 40, "y": 80, "powered": false }
   },
-  "wires": {},
+  "wires": {
+    "2": { "start": "0", "end": "1", "not": true }
+  },
   "texts": {},
   "viewport": { "x": 0, "y": 0, "scale": 1 }
 }

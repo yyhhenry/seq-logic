@@ -238,6 +238,9 @@ export class Diagram {
 
     modified: boolean;
 
+    /**
+     * 在Vue的响应式语法影响下，禁止在构造函数中添加未来可能会被监听的this属性，所有this属性必须由当前方法立即得到
+     */
     constructor(storage: DiagramStorage) {
         storage = clone(storage);
         function recordToMap<T>(record: Record<string, T>) {
@@ -396,24 +399,29 @@ export class Diagram {
     }
     merge(storage: DiagramStorage) {
         storage = remarkId(storage);
-        [...Object.values(storage.nodes)].forEach((node) => {
+        [...Object.values(storage.nodes)].forEach(node => {
             node.x += this.viewport.x - storage.viewport.x;
             node.y += this.viewport.y - storage.viewport.y;
         });
-        [...Object.values(storage.texts)].forEach((text) => {
+        [...Object.values(storage.texts)].forEach(text => {
             text.x += this.viewport.x - storage.viewport.x;
             text.y += this.viewport.y - storage.viewport.y;
         });
-        for(const [id, node] of Object.entries(storage.nodes)) {
+        for (const [id, node] of Object.entries(storage.nodes)) {
             this.nodes.set(id, node);
         }
-        for(const [id, wire] of Object.entries(storage.wires)) {
+        for (const [id, wire] of Object.entries(storage.wires)) {
             this.wires.set(id, wire);
         }
-        for(const [id, text] of Object.entries(storage.texts)) {
+        for (const [id, text] of Object.entries(storage.texts)) {
             this.texts.set(id, text);
         }
         this.saveHistory();
+        return {
+            nodes: new Set(Object.keys(storage.nodes)),
+            wires: new Set(Object.keys(storage.wires)),
+            texts: new Set(Object.keys(storage.texts)),
+        };
     }
     getNodeStatus(nodeId: string) {
         return this.status.get(this.getGroupRoot(nodeId)!)!;

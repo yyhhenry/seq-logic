@@ -227,11 +227,9 @@ const onClick = (e: MouseEvent, itemType: ItemType | 'blank', id: string) => {
     <ElHeader class="root-header">
       <LRMenu>
         <ElButton
-          :type="'info'"
-          class="header-text"
+          :type="'danger'"
           @click="onClose()"
           :icon="Close"
-          :circle="true"
         >
         </ElButton>
         <div class="header-text" style="margin: 10px">
@@ -253,27 +251,23 @@ const onClick = (e: MouseEvent, itemType: ItemType | 'blank', id: string) => {
             <g
               :transform="`scale(${diagram?.viewport.scale}), translate(${diagram?.viewport.x}, ${diagram?.viewport.y})`"
             >
-              <g>
-                <g v-for="[id, wire] of diagram.wires.entries()">
-                  <path
-                    :stroke="'var(--color-text)'"
-                    :stroke-width="2"
-                    :fill="'none'"
-                  />
-                </g>
+              <g v-for="[id, wire] of diagram.wires.entries()">
+                <path
+                  :stroke="'var(--color-text)'"
+                  :stroke-width="2"
+                  :fill="'none'"
+                />
               </g>
-              <g>
-                <g
-                  v-for="[id, node] of diagram.nodes.entries()"
-                  @click="e => onClick(e, 'node', id)"
-                >
-                  <circle
-                    :cx="node.x"
-                    :cy="node.y"
-                    :r="10"
-                    :fill="'var(--color-text)'"
-                  />
-                </g>
+              <g
+                v-for="[id, node] of diagram.nodes.entries()"
+                @click="e => onClick(e, 'node', id)"
+              >
+                <circle
+                  :cx="node.x"
+                  :cy="node.y"
+                  :r="10"
+                  :fill="'var(--color-text)'"
+                />
               </g>
             </g>
           </svg>

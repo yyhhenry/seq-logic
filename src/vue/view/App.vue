@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  ElButton,
   ElCard,
   ElCol,
   ElContainer,
@@ -10,20 +11,21 @@ import {
   ElScrollbar,
 } from 'element-plus';
 import remote from '@/remote';
-import { useDark, useTitle } from '@vueuse/core';
+import { useDark, useTitle, useToggle } from '@vueuse/core';
 import { promiseRef } from '@/util/promiseRef';
 import LRMenu from './components/LRMenu.vue';
 import Editor from './Editor.vue';
 import { ref } from 'vue';
 import { getFiles, FileRecord } from '@/util/database';
 import { readableDate, readableFilename } from '@/util/readable';
-import { DocumentAdd, Download } from '@element-plus/icons-vue';
+import { DocumentAdd, Download, Sunny, Moon } from '@element-plus/icons-vue';
 import { getBlankDiagramStorage } from '@/util/SeqLogic';
 import { websiteName } from '@/util/websiteName';
 import { updateFile } from '@/util/database';
 const title = websiteName;
 useTitle(title);
-useDark();
+const dark = useDark();
+const toggle = useToggle(dark);
 const pathname = ref<string>();
 const files = promiseRef(getFiles(), []);
 const fetchFiles = async (pathname?: string) => {
@@ -76,6 +78,21 @@ const onNewFile = async () => {
     <ElHeader class="root-header">
       <LRMenu>
         <span class="header-text">Project List</span>
+        <template #end>
+          <div v-if="!dark" style="font-size: smaller">
+            (We prefer Dark Mode)
+          </div>
+          <ElButton
+            :style="{
+              marginLeft: '10px',
+              marginRight: '10px',
+            }"
+            :type="'info'"
+            :icon="dark ? Moon : Sunny"
+            @click="toggle()"
+          >
+          </ElButton>
+        </template>
       </LRMenu>
     </ElHeader>
     <ElMain class="no-padding">
