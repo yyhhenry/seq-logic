@@ -178,6 +178,13 @@ export class History<T> {
         return true;
     }
 }
+const notNullAssertion = <T>(value: T | undefined | null): T => {
+    if (value == null) {
+        throw new Error('value is null');
+    }
+    return value;
+};
+const _NNA = notNullAssertion;
 export const remarkId = (storage: DiagramStorage) => {
     const nodeIdMapping = new Map(
         [...Object.keys(storage.nodes)].map(
@@ -187,7 +194,7 @@ export const remarkId = (storage: DiagramStorage) => {
     const nodes = Object.fromEntries(
         Object.entries(storage.nodes).map(
             ([id, node]) =>
-                [nodeIdMapping.get(id)!, node] satisfies [string, Node]
+                [_NNA(nodeIdMapping.get(id)), node] satisfies [string, Node]
         )
     );
     const wires = Object.fromEntries(
@@ -196,8 +203,8 @@ export const remarkId = (storage: DiagramStorage) => {
                 [
                     uuid(),
                     {
-                        start: nodeIdMapping.get(wire.start)!,
-                        end: nodeIdMapping.get(wire.end)!,
+                        start: _NNA(nodeIdMapping.get(wire.start)),
+                        end: _NNA(nodeIdMapping.get(wire.end)),
                         not: wire.not,
                     },
                 ] satisfies [string, Wire]
@@ -218,9 +225,10 @@ export const remarkId = (storage: DiagramStorage) => {
 /**
  * A diagram.
  *
- * When updating the coordinate of the nodes and texts, no need to re-parse the whole diagram. But you need to call saveHistory() after the update.
+ * When updating the coordinate of the nodes and texts, no need to re-parse the whole diagram if needed. But you need to call saveHistory() after the update.
  * You should not update the existence of the nodes, wires and texts. You should call add and remove instead.
  * When updating the viewport, no need to call anything and there is no history.
+ *
  */
 export class Diagram {
     nodes: History<Node>;
@@ -273,7 +281,7 @@ export class Diagram {
         }
     }
     private getGroupRoot(nodeId: string): string {
-        const fa = this.groupRoot.get(nodeId)!;
+        const fa = _NNA(this.groupRoot.get(nodeId));
         if (fa == nodeId) {
             return nodeId;
         }
@@ -289,11 +297,11 @@ export class Diagram {
             [...this.nodes.entries()].map(([id]) => [id, new Set()])
         );
         for (const [id, wire] of this.wires.entries()) {
-            this.wireWithNode.get(wire.start)!.add(id);
-            this.wireWithNode.get(wire.end)!.add(id);
+            _NNA(this.wireWithNode.get(wire.start)).add(id);
+            _NNA(this.wireWithNode.get(wire.end)).add(id);
         }
         for (const [id, status] of this.status.entries()) {
-            status.powered = this.nodes.get(id)!.powered;
+            status.powered = _NNA(this.nodes.get(id)).powered;
         }
         this.groupRoot = new Map(
             [...this.nodes.entries()].map(([id]) => [id, id])
@@ -308,7 +316,9 @@ export class Diagram {
                 continue;
             }
             this.groupRoot.set(start, end);
-            this.status.get(end)!.powered ||= this.status.get(start)!.powered;
+            _NNA(this.status.get(end)).powered ||= _NNA(
+                this.status.get(start)
+            ).powered;
         }
         for (const id of this.nodes.keys()) {
             this.getGroupRoot(id);
@@ -325,8 +335,8 @@ export class Diagram {
             }
             const start = this.getGroupRoot(wire.start);
             const end = this.getGroupRoot(wire.end);
-            this.updatePrec.get(end)!.add(start);
-            this.updateSucc.get(start)!.add(end);
+            _NNA(this.updatePrec.get(end)).add(start);
+            _NNA(this.updateSucc.get(start)).add(end);
         }
         this.activateAll();
     }
@@ -338,10 +348,10 @@ export class Diagram {
         if (toggle !== undefined) {
             const succList = new Set<string>();
             for (const id of toggle) {
-                const status = this.status.get(id)!;
+                const status = _NNA(this.status.get(id));
                 status.active = !status.active;
                 status.nextTick = undefined;
-                for (const succ of this.updateSucc.get(id)!) {
+                for (const succ of _NNA(this.updateSucc.get(id))) {
                     succList.add(succ);
                 }
             }
@@ -352,10 +362,10 @@ export class Diagram {
         this.toggle.delete(this.current++);
     }
     private activate(nodeId: string) {
-        const status = this.status.get(nodeId)!;
+        const status = _NNA(this.status.get(nodeId));
         let result = status.powered;
-        for (const prec of this.updatePrec.get(nodeId)!) {
-            result ||= !this.status.get(prec)!.active;
+        for (const prec of _NNA(this.updatePrec.get(nodeId))) {
+            result ||= !_NNA(this.status.get(prec)).active;
         }
         if (result == status.active) {
             if (status.nextTick !== undefined) {
@@ -369,7 +379,7 @@ export class Diagram {
                 if (!this.toggle.has(status.nextTick)) {
                     this.toggle.set(status.nextTick, new Set());
                 }
-                this.toggle.get(status.nextTick)!.add(nodeId);
+                _NNA(this.toggle.get(status.nextTick)).add(nodeId);
             }
         }
     }
@@ -424,7 +434,7 @@ export class Diagram {
         };
     }
     getNodeStatus(nodeId: string) {
-        return this.status.get(this.getGroupRoot(nodeId)!)!;
+        return _NNA(this.status.get(_NNA(this.getGroupRoot(nodeId))));
     }
     /**
      * Save the history to handle undo and redo.
@@ -469,7 +479,7 @@ export class Diagram {
         this.saveHistory();
         if (this.nodes.has(id)) {
             this.nodes.delete(id);
-            for (const wireId of this.wireWithNode.get(id)!) {
+            for (const wireId of _NNA(this.wireWithNode.get(id))) {
                 this.wires.delete(wireId);
             }
         } else {
