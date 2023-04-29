@@ -38,9 +38,9 @@ const onClose = async () => {
   await fetchFiles();
   pathname.value = undefined;
 };
-const onOpen = async (file: FileRecord) => {
-  pathname.value = file.pathname;
-  await fetchFiles(pathname.value);
+const onOpen = async (file: string) => {
+  await fetchFiles(file);
+  pathname.value = file;
 };
 const onImport = async () => {
   const { filePaths } = await remote.main['dialog.showOpenDialog']({
@@ -55,8 +55,7 @@ const onImport = async () => {
   if (filePaths.length != 1) {
     return;
   }
-  pathname.value = filePaths[0];
-  await fetchFiles(pathname.value);
+  await onOpen(filePaths[0]);
 };
 const onNewFile = async () => {
   const { filePath } = await remote.main['dialog.showSaveDialog']({
@@ -69,8 +68,7 @@ const onNewFile = async () => {
     return;
   }
   await remote.fs.writeFile(filePath, JSON.stringify(getBlankDiagramStorage()));
-  pathname.value = filePath;
-  await fetchFiles(pathname.value);
+  await onOpen(filePath);
 };
 </script>
 <template>
@@ -119,7 +117,7 @@ const onNewFile = async () => {
             </ElRow>
           </ElCol>
           <ElCol :span="24" :md="16" v-for="file of files">
-            <ElCard class="button-card" @click="onOpen(file)">
+            <ElCard class="button-card" @click="onOpen(file.pathname)">
               <ElRow :justify="'space-between'" :align="'middle'">
                 <div>
                   <h2 class="header-text">
