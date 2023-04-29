@@ -11,12 +11,15 @@ import {
 import { Close } from '@element-plus/icons-vue';
 import LRMenu from './components/LRMenu.vue';
 import { deleteFile } from '@/util/database';
-import { Diagram } from '@/util/SeqLogic';
+import { Diagram, getBlankDiagramStorage } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
 import { readableFilename } from '@/util/readable';
-import { onMounted, onUnmounted, ref } from 'vue';
-import { useDark, useMousePressed } from '@vueuse/core';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useMousePressed } from '@vueuse/core';
 import { useMouseInElement } from '@vueuse/core';
+import Node from './diagram-view/Node.vue';
+import { DiagramStorage } from '@/util/SeqLogic';
+import { isDiagramStorage } from '@/util/SeqLogic';
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
@@ -47,8 +50,8 @@ const onClose = async () => {
 const diagram = promiseRef(getDiagram());
 
 // Default action:
-// wheel to zoom
-// ctrl drag to move
+// - wheel to zoom
+// - ctrl drag to move
 // Show a error message if the operation is invalid
 // press A or click "Add node(A)" to clear selected items and to status: add-node
 // press W or click "Add wire(W)" when selected items contains any node to clear non-node selected items and to status: add-wire
@@ -64,6 +67,7 @@ const diagram = promiseRef(getDiagram());
 // click to select one node, wire or text
 // click blank to clear selected items
 // drag on selected to move selected nodes, wires and texts
+//
 
 // status: add-node
 // preview a node at the mouse position
@@ -104,7 +108,14 @@ const selectedItems = ref<SelectedItems>({
 });
 const svgRef = ref<SVGSVGElement>();
 const mouse = useMouseInElement(svgRef);
-const mousePressed = useMousePressed();
+const mouseInView = computed(() => {
+  const [x, y] = [mouse.elementX.value, mouse.elementY.value];
+  const scale = diagram.value?.viewport.scale ?? 1;
+  return {
+    x: x / scale - (diagram.value?.viewport.x ?? 0),
+    y: y / scale - (diagram.value?.viewport.y ?? 0),
+  };
+});
 const onUndo = () => {
   if (diagram.value) {
     diagram.value.undo();
@@ -115,28 +126,155 @@ const onRedo = () => {
     diagram.value.redo();
   }
 };
-const onKeyPress = (e: KeyboardEvent) => {
-  if (e.key === 'z') {
-    if (e.ctrlKey) {
+const onCopy = () => {
+  if (diagram.value) {
+    const storage = diagram.value.extract(
+      selectedItems.value.node,
+      selectedItems.value.text
+    );
+    navigator.clipboard.writeText(JSON.stringify(storage));
+  }
+};
+const onPaste = () => {
+  if (diagram.value) {
+    navigator.clipboard.readText().then(text => {
+      try {
+        const storage = JSON.parse(text);
+        if (isDiagramStorage(storage)) {
+          diagram.value?.merge(storage);
+        }
+      } catch (e) {
+        console.error(e);
+        ElMessageBox.alert('Failed to paste');
+      }
+    });
+  }
+};
+const onSave = () => {
+  if (diagram.value) {
+    diagram.value.saveFile(props.pathname);
+  }
+};
+const onEscape = () => {
+  if (editorStatus.value !== 'idle') {
+    diagram.value?.undo();
+    editorStatus.value = 'idle';
+  }
+};
+const addNodeProc = () => {
+  if (!diagram.value) {
+    throw new Error('diagram is undefined');
+  }
+  return diagram.value?.addNode({
+    x: mouseInView.value.x,
+    y: mouseInView.value.y,
+    powered: false,
+  });
+};
+const getNodeAtMouse = () => {
+  if (!diagram.value) {
+    throw new Error('diagram is undefined');
+  }
+  for (const [id, node] of diagram.value.nodes.entries()) {
+    const [dx, dy] = [
+      node.x - mouseInView.value.x,
+      node.y - mouseInView.value.y,
+    ];
+    if (dx * dx + dy * dy < 100) {
+      return id;
+    }
+  }
+  return undefined;
+};
+const addWireProc = () => {
+  if (!diagram.value) {
+    throw new Error('diagram is undefined');
+  }
+  const end = getNodeAtMouse() ?? addNodeProc();
+  for (const id of selectedItems.value.node) {
+    const node = diagram.value?.nodes.get(id);
+    if (node) {
+      diagram.value.addWire({
+        start: id,
+        end,
+        not: false,
+      });
+    }
+  }
+};
+const addTextProc = () => {
+  if (!diagram.value) {
+    throw new Error('diagram is undefined');
+  }
+  return diagram.value?.addText({
+    x: mouseInView.value.x,
+    y: mouseInView.value.y,
+    text: 'New Text',
+    scale: 1,
+  });
+};
+const onAddNode = () => {
+  onEscape();
+  editorStatus.value = 'add-node';
+  selectedItems.value = {
+    node: new Set(),
+    wire: new Set(),
+    text: new Set(),
+  };
+  addNodeProc();
+  diagram.value?.saveHistory();
+};
+const onAddWire = () => {
+  onEscape();
+  editorStatus.value = 'add-wire';
+  selectedItems.value.wire = new Set();
+  selectedItems.value.text = new Set();
+  addWireProc();
+  diagram.value?.saveHistory();
+};
+const onAddText = () => {
+  onEscape();
+  editorStatus.value = 'add-text';
+  selectedItems.value = {
+    node: new Set(),
+    wire: new Set(),
+    text: new Set(),
+  };
+  addTextProc();
+  diagram.value?.saveHistory();
+};
+const onKeyUp = (e: KeyboardEvent) => {
+  if (mousePath.value !== undefined) {
+    return;
+  }
+  if (e.ctrlKey) {
+    if (editorStatus.value !== 'idle') {
+      return;
+    }
+    if (e.key === 'c') {
+      onCopy();
+    } else if (e.key === 'v') {
+      onPaste();
+    } else if (e.key === 'z') {
       onUndo();
-    }
-  }
-  if (e.key === 'y') {
-    if (e.ctrlKey) {
+    } else if (e.key === 'y') {
       onRedo();
+    } else if (e.key === 's') {
+      onSave();
     }
-  }
-  if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) {
-  } else {
+  } else if (!e.shiftKey) {
     if (e.key === 'a') {
-      editorStatus.value = 'add-node';
+      onAddNode();
     } else if (e.key === 'w') {
-      editorStatus.value = 'add-wire';
+      onAddWire();
     } else if (e.key === 't') {
-      editorStatus.value = 'add-text';
+      onAddText();
     } else if (e.key === 'Escape') {
-      editorStatus.value = 'idle';
+      onEscape();
     } else if (e.key === 'Delete') {
+      if (editorStatus.value !== 'idle') {
+        return;
+      }
       selectedItems.value.node.forEach(id => {
         diagram.value?.removeNode(id);
       });
@@ -146,6 +284,7 @@ const onKeyPress = (e: KeyboardEvent) => {
       selectedItems.value.text.forEach(id => {
         diagram.value?.removeText(id);
       });
+      diagram.value?.saveHistory();
       selectedItems.value = {
         node: new Set(),
         wire: new Set(),
@@ -156,38 +295,51 @@ const onKeyPress = (e: KeyboardEvent) => {
   }
 };
 onMounted(() => {
-  window.addEventListener('keypress', onKeyPress);
+  window.addEventListener('keyup', onKeyUp);
 });
 onUnmounted(() => {
-  window.removeEventListener('keypress', onKeyPress);
+  window.removeEventListener('keyup', onKeyUp);
 });
 const onWheel = (e: WheelEvent) => {
   if (diagram.value) {
     const [x, y] = [mouse.elementX.value, mouse.elementY.value];
     diagram.value.viewport.x -= x / diagram.value.viewport.scale;
     diagram.value.viewport.y -= y / diagram.value.viewport.scale;
-    diagram.value.viewport.scale *= 1 + e.deltaY / 1000;
+    diagram.value.viewport.scale *= 1 - e.deltaY / 1000;
     diagram.value.viewport.x += x / diagram.value.viewport.scale;
     diagram.value.viewport.y += y / diagram.value.viewport.scale;
     e.stopPropagation();
   }
 };
-const onMove = (e: MouseEvent) => {
-  if (e.ctrlKey) {
-    if (mousePressed.pressed.value) {
-      if (!diagram.value) return;
-      diagram.value.viewport.x += e.movementX / diagram.value.viewport.scale;
-      diagram.value.viewport.y += e.movementY / diagram.value.viewport.scale;
-      e.stopPropagation();
-    }
-  } else {
-    if (mousePressed.pressed.value) {
-    }
-  }
-  // TODO: implement
-};
-const onClick = (e: MouseEvent, itemType: ItemType | 'blank', id: string) => {
+/**
+ * x, y in view
+ */
+interface MousePath {
+  x: number;
+  y: number;
+  mode: 'move-viewport' | 'drag-selected' | 'box-select' | 'box-toggle-select';
+  activated: boolean;
+}
+const mousePath = ref<MousePath>();
+const onMouseDown = (
+  e: MouseEvent,
+  itemType: ItemType | 'blank',
+  id: string
+) => {
+  e.stopPropagation();
   if (editorStatus.value === 'idle') {
+    mousePath.value = {
+      x: mouseInView.value.x,
+      y: mouseInView.value.y,
+      mode: e.ctrlKey
+        ? 'move-viewport'
+        : e.shiftKey
+        ? 'box-toggle-select'
+        : itemType == 'blank'
+        ? 'box-select'
+        : 'drag-selected',
+      activated: false,
+    };
     if (e.shiftKey) {
       if (itemType === 'blank') {
       } else {
@@ -197,8 +349,7 @@ const onClick = (e: MouseEvent, itemType: ItemType | 'blank', id: string) => {
           selectedItems.value[itemType].add(id);
         }
       }
-      e.stopPropagation();
-    } else {
+    } else if (!e.ctrlKey) {
       if (itemType === 'blank') {
         selectedItems.value = {
           node: new Set(),
@@ -215,23 +366,132 @@ const onClick = (e: MouseEvent, itemType: ItemType | 'blank', id: string) => {
           selectedItems.value[itemType].add(id);
         }
       }
-      e.stopPropagation();
     }
-    // TODO: implement
   }
-  // TODO: implement
+};
+const onMouseUp = () => {
+  if (mousePath.value !== undefined) {
+    if (!diagram.value) return;
+    if (
+      mousePath.value.mode === 'box-select' ||
+      mousePath.value.mode === 'box-toggle-select'
+    ) {
+      const [left, top] = [
+        Math.min(mousePath.value.x, mouseInView.value.x),
+        Math.min(mousePath.value.y, mouseInView.value.y),
+      ];
+      const [width, height] = [
+        Math.abs(mousePath.value.x - mouseInView.value.x),
+        Math.abs(mousePath.value.y - mouseInView.value.y),
+      ];
+      const inRange = (x: number, y: number) =>
+        x >= left && x < left + width && y >= top && y < top + height;
+      if (mousePath.value.mode === 'box-select') {
+        selectedItems.value = {
+          node: new Set(),
+          wire: new Set(),
+          text: new Set(),
+        };
+      }
+      for (const [id, node] of diagram.value.nodes.entries()) {
+        if (inRange(node.x, node.y)) {
+          if (
+            mousePath.value.mode === 'box-toggle-select' &&
+            selectedItems.value.node.has(id)
+          ) {
+            selectedItems.value.node.delete(id);
+          } else {
+            selectedItems.value.node.add(id);
+          }
+        }
+      }
+      for (const [id, text] of diagram.value.texts.entries()) {
+        if (inRange(text.x, text.y)) {
+          if (
+            mousePath.value.mode === 'box-toggle-select' &&
+            selectedItems.value.text.has(id)
+          ) {
+            selectedItems.value.text.delete(id);
+          } else {
+            selectedItems.value.text.add(id);
+          }
+        }
+      }
+    }
+    mousePath.value = undefined;
+  } else if (editorStatus.value === 'add-node') {
+    if (!diagram.value) return;
+    diagram.value.saveHistory();
+  } else if (editorStatus.value === 'add-text') {
+    if (!diagram.value) return;
+    diagram.value.saveHistory();
+  } else if (editorStatus.value === 'add-wire') {
+    if (!diagram.value) return;
+    diagram.value.saveHistory();
+  }
+};
+const onMove = (e: MouseEvent) => {
+  if (mousePath.value !== undefined) {
+    if (!diagram.value) return;
+    if (mousePath.value.mode == 'move-viewport') {
+      diagram.value.viewport.x += e.movementX / diagram.value.viewport.scale;
+      diagram.value.viewport.y += e.movementY / diagram.value.viewport.scale;
+    } else if (mousePath.value.mode == 'drag-selected') {
+      const [dx, dy] = [
+        mouseInView.value.x - mousePath.value.x,
+        mouseInView.value.y - mousePath.value.y,
+      ];
+      if (!mousePath.value.activated && Math.sqrt(dx * dx + dy * dy) > 5) {
+        mousePath.value.activated = true;
+        diagram.value.saveHistory();
+      }
+      if (mousePath.value.activated) {
+        diagram.value.undo();
+        for (const id of selectedItems.value.node) {
+          const node = diagram.value?.nodes.get(id);
+          if (node) {
+            node.x += mouseInView.value.x - mousePath.value.x;
+            node.y += mouseInView.value.y - mousePath.value.y;
+            diagram.value.nodes.set(id, node);
+          }
+        }
+        for (const id of selectedItems.value.text) {
+          const text = diagram.value?.texts.get(id);
+          if (text) {
+            text.x += mouseInView.value.x - mousePath.value.x;
+            text.y += mouseInView.value.y - mousePath.value.y;
+            diagram.value.texts.set(id, text);
+          }
+        }
+        diagram.value.saveHistory();
+      }
+    }
+  } else if (editorStatus.value === 'add-node') {
+    if (!diagram.value) return;
+    diagram.value.undo();
+    addNodeProc();
+    diagram.value.saveHistory();
+  } else if (editorStatus.value === 'add-text') {
+    if (!diagram.value) return;
+    diagram.value.undo();
+    addTextProc();
+    diagram.value.saveHistory();
+  } else if (editorStatus.value === 'add-wire') {
+    if (!diagram.value) return;
+    diagram.value.undo();
+    addWireProc();
+    diagram.value.saveHistory();
+  }
 };
 </script>
 <template>
   <ElContainer class="root">
     <ElHeader class="root-header">
       <LRMenu>
-        <ElButton
-          :type="'danger'"
-          @click="onClose()"
-          :icon="Close"
-        >
-        </ElButton>
+        <ElButton :type="'danger'" @click="onClose()" :icon="Close"> </ElButton>
+        <div style="margin-left: 10px">
+          {{ diagram?.modified ? '(Unsaved)' : '' }}
+        </div>
         <div class="header-text" style="margin: 10px">
           {{ readableFilename(pathname) }}
         </div>
@@ -247,10 +507,20 @@ const onClick = (e: MouseEvent, itemType: ItemType | 'blank', id: string) => {
             v-if="diagram !== undefined"
             @mousemove="e => onMove(e)"
             @wheel="e => onWheel(e)"
+            @mousedown="e => onMouseDown(e, 'blank', '')"
+            @mouseup="onMouseUp()"
           >
             <g
               :transform="`scale(${diagram?.viewport.scale}), translate(${diagram?.viewport.x}, ${diagram?.viewport.y})`"
             >
+              <g>
+                <path
+                  :stroke="'var(--color-text)'"
+                  :stroke-width="2"
+                  :fill="'none'"
+                  d="M -40 0 L 1920 0 M 0 -40 L 0 1080"
+                ></path>
+              </g>
               <g v-for="[id, wire] of diagram.wires.entries()">
                 <path
                   :stroke="'var(--color-text)'"
@@ -260,13 +530,30 @@ const onClick = (e: MouseEvent, itemType: ItemType | 'blank', id: string) => {
               </g>
               <g
                 v-for="[id, node] of diagram.nodes.entries()"
-                @click="e => onClick(e, 'node', id)"
+                @mousedown="e => onMouseDown(e, 'node', id)"
               >
-                <circle
-                  :cx="node.x"
-                  :cy="node.y"
-                  :r="10"
-                  :fill="'var(--color-text)'"
+                <Node
+                  :id="id"
+                  :node="node"
+                  :selected="selectedItems.node.has(id)"
+                  :status="diagram.getNodeStatus(id)"
+                />
+              </g>
+              <g
+                v-if="
+                  mousePath?.mode == 'box-select' ||
+                  mousePath?.mode == 'box-toggle-select'
+                "
+              >
+                <rect
+                  :x="Math.min(mousePath.x, mouseInView.x)"
+                  :y="Math.min(mousePath.y, mouseInView.y)"
+                  :width="Math.abs(mousePath.x - mouseInView.x)"
+                  :height="Math.abs(mousePath.y - mouseInView.y)"
+                  :stroke="'var(--el-color-primary)'"
+                  :stroke-width="1"
+                  :stroke-dasharray="'3 2'"
+                  :fill="'none'"
                 />
               </g>
             </g>

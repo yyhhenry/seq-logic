@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { MaybeObject, isObjectMaybe } from '../types';
 import { isObjectOf } from '../types';
 import remote from '@/remote';
+import { ElMessage } from 'element-plus';
 interface Coordinate {
     x: number;
     y: number;
@@ -53,13 +54,13 @@ export const isWire = (u: unknown): u is Wire => {
 };
 export interface Text extends Coordinate {
     text: string;
-    size: string;
+    scale: number;
 }
 export const isText = (u: unknown): u is Text => {
     return (
         isCoordinate<Text>(u) &&
         typeof u.text === 'string' &&
-        typeof u.size === 'string'
+        typeof u.scale === 'number'
     );
 };
 export interface Viewport extends Coordinate {
@@ -94,23 +95,61 @@ export interface BaseModification<T> {
     deleted?: T;
     inserted?: T;
 }
+/**
+ * 自动保存历史记录
+ * 默认指针在最后一条记录，初始在0
+ * 每次进行一次独立修改时saveHistory()
+ */
 export class History<T> {
     private items: Map<string, T>;
     private history: Map<string, BaseModification<T>>[];
+    /**
+     * 指向当前记录
+     * modifying: 指向正在修改的记录
+     * committed: 指向可进行redo的第一条记录
+     */
     private current: number;
+    private status: 'modifying' | 'committed';
     constructor(items: Map<string, T>) {
         this.items = items;
         this.history = [];
         this.current = -1;
+        this.saveHistory();
+        this.status = 'committed';
     }
     has(id: string) {
         return this.items.has(id);
     }
+    /**
+     * After modifying, you should set it back.
+     */
     get(id: string) {
         const origin = this.items.get(id);
         return clone(origin);
     }
+    /**
+     *  Do not modify the items.
+     */
+    entries() {
+        return this.items.entries();
+    }
+    keys() {
+        return this.items.keys();
+    }
+    /**
+     * Start modifying.
+     */
+    private beforeModify() {
+        if (this.status === 'committed') {
+            while (this.history.length - 1 > this.current) {
+                this.history.pop();
+            }
+            this.history[this.current] = new Map<string, BaseModification<T>>();
+            this.status = 'modifying';
+        }
+    }
     delete(id: string) {
+        this.beforeModify();
         const cur = this.history[this.current];
         const origin = this.items.get(id);
         const item = cur.get(id);
@@ -122,6 +161,7 @@ export class History<T> {
         this.items.delete(id);
     }
     set(id: string, value: T) {
+        this.beforeModify();
         const cur = this.history[this.current];
         const origin = this.items.get(id);
         const item = cur.get(id);
@@ -133,27 +173,24 @@ export class History<T> {
         }
         this.items.set(id, inserted);
     }
-    saveHistory() {
-        while (this.current < this.history.length - 1) {
-            this.history.pop();
-        }
-        this.current++;
-        this.history.push(new Map<string, BaseModification<T>>());
-    }
     /**
-     *  Do not modify the items.
+     * End modifying.
      */
-    entries() {
-        return this.items.entries();
-    }
-    keys() {
-        return this.items.keys();
+    saveHistory() {
+        this.beforeModify();
+        this.history.push(new Map<string, BaseModification<T>>());
+        this.current++;
+        this.status = 'committed';
     }
     undo() {
-        if (this.current < 0) {
+        if (this.status === 'modifying') {
+            throw new Error('Cannot undo while modifying.');
+        }
+        if (this.current <= 0) {
             return false;
         }
-        const cur = this.history[this.current--];
+        this.current--;
+        const cur = this.history[this.current];
         for (const [id, value] of cur.entries()) {
             if (value.deleted) {
                 this.items.set(id, value.deleted);
@@ -164,10 +201,13 @@ export class History<T> {
         return true;
     }
     redo() {
+        if (this.status === 'modifying') {
+            throw new Error('Cannot redo while modifying.');
+        }
         if (this.current >= this.history.length - 1) {
             return false;
         }
-        const cur = this.history[++this.current];
+        const cur = this.history[this.current];
         for (const [id, value] of cur.entries()) {
             if (value.inserted) {
                 this.items.set(id, value.inserted);
@@ -175,6 +215,7 @@ export class History<T> {
                 this.items.delete(id);
             }
         }
+        this.current++;
         return true;
     }
 }
@@ -225,7 +266,7 @@ export const remarkId = (storage: DiagramStorage) => {
 /**
  * A diagram.
  *
- * When updating the coordinate of the nodes and texts, no need to re-parse the whole diagram if needed. But you need to call saveHistory() after the update.
+ * 更新后调用saveHistory()，如果不需要re-parse，就传入false。
  * You should not update the existence of the nodes, wires and texts. You should call add and remove instead.
  * When updating the viewport, no need to call anything and there is no history.
  *
@@ -300,8 +341,25 @@ export class Diagram {
             _NNA(this.wireWithNode.get(wire.start)).add(id);
             _NNA(this.wireWithNode.get(wire.end)).add(id);
         }
+        for (const [id, node] of this.nodes.entries()) {
+            if (this.status.get(id) == null) {
+                this.status.set(id, {
+                    active: node.powered,
+                    powered: node.powered,
+                });
+            }
+        }
+        const needToRemove = new Set<string>();
         for (const [id, status] of this.status.entries()) {
-            status.powered = _NNA(this.nodes.get(id)).powered;
+            const node = this.nodes.get(id);
+            if (node == null) {
+                needToRemove.add(id);
+            } else {
+                status.powered = node.powered;
+            }
+        }
+        for (const id of needToRemove) {
+            this.status.delete(id);
         }
         this.groupRoot = new Map(
             [...this.nodes.entries()].map(([id]) => [id, id])
@@ -439,26 +497,32 @@ export class Diagram {
     /**
      * Save the history to handle undo and redo.
      */
-    saveHistory(parse = true) {
+    saveHistory() {
         this.modified = true;
         this.nodes.saveHistory();
         this.wires.saveHistory();
         this.texts.saveHistory();
-        if (parse) {
-            this.parse();
-        }
+        this.parse();
     }
     undo() {
-        this.nodes.undo();
-        this.wires.undo();
-        this.texts.undo();
-        this.parse();
+        const valid =
+            this.nodes.undo() && this.wires.undo() && this.texts.undo();
+        if (valid) {
+            this.modified = true;
+            this.parse();
+        } else {
+            ElMessage.error('Cannot undo anymore');
+        }
     }
     redo() {
-        this.nodes.redo();
-        this.wires.redo();
-        this.texts.redo();
-        this.parse();
+        const valid =
+            this.nodes.redo() && this.wires.redo() && this.texts.redo();
+        if (valid) {
+            this.modified = true;
+            this.parse();
+        } else {
+            ElMessage.error('Cannot redo anymore');
+        }
     }
     addNode(node: Node) {
         const id = uuid();
@@ -467,6 +531,12 @@ export class Diagram {
     }
     addWire(wire: Wire) {
         const id = uuid();
+        if (wire.start === wire.end) {
+            return;
+        }
+        if (this.wireWithNode.get(wire.start)?.has(wire.end)) {
+            return;
+        }
         this.wires.set(id, wire);
         return id;
     }
@@ -476,7 +546,6 @@ export class Diagram {
         return id;
     }
     removeNode(id: string) {
-        this.saveHistory();
         if (this.nodes.has(id)) {
             this.nodes.delete(id);
             for (const wireId of _NNA(this.wireWithNode.get(id))) {
@@ -485,19 +554,15 @@ export class Diagram {
         } else {
             throw new Error('node not found');
         }
-        this.parse();
     }
     removeWire(id: string) {
-        this.saveHistory();
         if (this.wires.has(id)) {
             this.wires.delete(id);
         } else {
             throw new Error('wire not found');
         }
-        this.parse();
     }
     removeText(id: string) {
-        this.saveHistory();
         if (this.texts.has(id)) {
             this.texts.delete(id);
         } else {
