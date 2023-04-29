@@ -21,11 +21,16 @@ import { Diagram } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
 import { readableFilename } from '@/util/readable';
 import { computed, onUnmounted, ref } from 'vue';
-import { useMouseInElement } from '@vueuse/core';
+import {
+  useEventListener,
+  useIntervalFn,
+  useMouseInElement,
+} from '@vueuse/core';
 import Node from './diagram-view/Node.vue';
 import { isDiagramStorage } from '@/util/SeqLogic';
 import Wire from './diagram-view/Wire.vue';
 import TextView from './diagram-view/TextView.vue';
+import { animeFrame } from '@/util/animeFrame';
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
@@ -309,8 +314,8 @@ const onKeyUp = (e: KeyboardEvent) => {
     }
   }
 };
-window.addEventListener('keyup', onKeyUp);
-const nextTickTimer = setInterval(() => {
+useEventListener('keyup', onKeyUp);
+useIntervalFn(() => {
   if (diagram.value) {
     diagram.value.fetchClock();
     for (let i = 0; i < 10; i++) {
@@ -318,16 +323,11 @@ const nextTickTimer = setInterval(() => {
     }
   }
 }, 1000 / 60);
-const saveTimer = setInterval(() => {
+useIntervalFn(() => {
   if (diagram.value?.modified) {
     onSave();
   }
 }, 2000);
-onUnmounted(() => {
-  window.removeEventListener('keyup', onKeyUp);
-  clearInterval(nextTickTimer);
-  clearInterval(saveTimer);
-});
 const onWheel = (e: WheelEvent) => {
   if (diagram.value) {
     const [x, y] = [mouse.elementX.value, mouse.elementY.value];
@@ -605,6 +605,7 @@ const onMove = (e: MouseEvent) => {
       <ElContainer class="full-height full-width">
         <ElMain class="no-padding no-scroll">
           <svg
+            :key="animeFrame"
             class="full-height full-width"
             ref="svgRef"
             v-if="diagram !== undefined"
