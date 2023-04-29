@@ -597,6 +597,27 @@ export class Diagram {
             throw new Error('Invalid file');
         }
     }
+    fetchClock() {
+        const now = Date.now();
+        let modified = false;
+        for (const [id, node] of this.nodes.entries()) {
+            if (node.clock) {
+                const cur = now - node.clock.offset;
+                const idx = Math.floor(cur / node.clock.duration);
+                const powered = idx % 2 === 0;
+                if (node.powered !== powered) {
+                    this.nodes.set(id, {
+                        ...node,
+                        powered,
+                    });
+                    modified = true;
+                }
+            }
+        }
+        if (modified) {
+            this.saveHistory();
+        }
+    }
     async saveFile(pathname: string) {
         const storage = this.toStorage();
         await remote.fs.writeFile(pathname, JSON.stringify(storage));

@@ -26,6 +26,13 @@ const padding = 5;
       :r="probeRadius"
       :fill="'var(--el-color-primary)'"
     />
+    <circle
+      v-else
+      :cx="node.x"
+      :cy="node.y"
+      :r="probeRadius"
+      :fill="'var(--el-color-info)'"
+    />
     <rect
       v-if="selected"
       :x="node.x - radius - padding"

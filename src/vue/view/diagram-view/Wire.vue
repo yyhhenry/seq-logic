@@ -23,7 +23,7 @@ const width = 4;
       :y1="start.y"
       :x2="mid.x"
       :y2="mid.y"
-      :stroke="startPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
+      :stroke="startPart ? 'var(--el-color-danger)' : 'var(--color-heading)'"
       :stroke-width="width"
     ></line>
     <line
@@ -31,9 +31,11 @@ const width = 4;
       :y1="mid.y"
       :x2="end.x"
       :y2="end.y"
-      :stroke="endPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
+      :stroke="endPart ? 'var(--el-color-danger)' : 'var(--color-heading)'"
       :stroke-width="width"
+      :stroke-dasharray="wire.not ? `${width * 2} ${width}` : 'none'"
     ></line>
+
     <line
       v-if="selected"
       :x1="start.x"
@@ -42,7 +44,7 @@ const width = 4;
       :y2="end.y"
       :stroke="'var(--el-color-primary)'"
       :stroke-width="width + 5"
-      :stroke-dasharray="`${width*3} ${width*2}`"
+      :stroke-dasharray="`${width * 3} ${width * 2}`"
     >
     </line>
   </g>

@@ -249,6 +249,22 @@ const onAddText = () => {
   addTextProc();
   diagram.value?.saveHistory();
 };
+/**
+ * Only when idle
+ */
+const onDelete = () => {
+  selectedItems.value.wires.forEach(id => {
+    diagram.value?.removeWire(id);
+  });
+  selectedItems.value.nodes.forEach(id => {
+    diagram.value?.removeNode(id);
+  });
+  selectedItems.value.texts.forEach(id => {
+    diagram.value?.removeText(id);
+  });
+  diagram.value?.saveHistory();
+  clearSelectedItems();
+};
 const onKeyUp = (e: KeyboardEvent) => {
   if (mousePath.value !== undefined) {
     return;
@@ -278,28 +294,19 @@ const onKeyUp = (e: KeyboardEvent) => {
     } else if (e.key === 'Escape') {
       onEscape();
     } else if (e.key === 'Delete') {
-      if (editorStatus.value !== 'idle') {
-        return;
+      if (editorStatus.value == 'idle') {
+        onDelete();
       }
-      selectedItems.value.nodes.forEach(id => {
-        diagram.value?.removeNode(id);
-      });
-      selectedItems.value.wires.forEach(id => {
-        diagram.value?.removeWire(id);
-      });
-      selectedItems.value.texts.forEach(id => {
-        diagram.value?.removeText(id);
-      });
-      diagram.value?.saveHistory();
-      clearSelectedItems();
-      editorStatus.value = 'idle';
     }
   }
 };
 window.addEventListener('keyup', onKeyUp);
 const nextTickTimer = setInterval(() => {
   if (diagram.value) {
-    diagram.value.nextTick();
+    diagram.value.fetchClock();
+    for (let i = 0; i < 10; i++) {
+      diagram.value.nextTick();
+    }
   }
 }, 1000 / 60);
 onUnmounted(() => {
@@ -349,7 +356,7 @@ const onMouseDown = (
     if (e.shiftKey) {
       if (itemType === 'blank') {
       } else {
-        const itemsType = itemType + 's' as ItemsType;
+        const itemsType = (itemType + 's') as ItemsType;
         if (selectedItems.value[itemsType].has(id)) {
           selectedItems.value[itemsType].delete(id);
         } else {
@@ -360,7 +367,7 @@ const onMouseDown = (
       if (itemType === 'blank') {
         clearSelectedItems();
       } else {
-        const itemsType = itemType + 's' as ItemsType;
+        const itemsType = (itemType + 's') as ItemsType;
         if (!selectedItems.value[itemsType].has(id)) {
           clearSelectedItems();
           selectedItems.value[itemsType].add(id);
@@ -562,7 +569,10 @@ const onMove = (e: MouseEvent) => {
                 v-for="[id, text] of diagram.texts.entries()"
                 @mousedown="e => onMouseDown(e, 'text', id)"
               >
-                <TextView :text="text" :selected="selectedItems.texts.has(id)" />
+                <TextView
+                  :text="text"
+                  :selected="selectedItems.texts.has(id)"
+                />
               </g>
               <g
                 v-if="
