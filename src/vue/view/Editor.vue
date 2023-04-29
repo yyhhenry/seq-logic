@@ -8,18 +8,21 @@ import {
   ElFooter,
   ElRow,
   ElMessage,
+  ElDropdown,
+  ElDropdownItem,
+  ElLink,
+  ElCard,
+  ElDivider,
 } from 'element-plus';
 import { Close } from '@element-plus/icons-vue';
 import LRMenu from './components/LRMenu.vue';
 import { deleteFile } from '@/util/database';
-import { Diagram, getBlankDiagramStorage } from '@/util/SeqLogic';
+import { Diagram } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
 import { readableFilename } from '@/util/readable';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useMousePressed } from '@vueuse/core';
+import { computed, onUnmounted, ref } from 'vue';
 import { useMouseInElement } from '@vueuse/core';
 import Node from './diagram-view/Node.vue';
-import { DiagramStorage } from '@/util/SeqLogic';
 import { isDiagramStorage } from '@/util/SeqLogic';
 import Wire from './diagram-view/Wire.vue';
 import TextView from './diagram-view/TextView.vue';
@@ -117,6 +120,13 @@ const clearSelectedItems = () => {
     texts: new Set(),
   };
 };
+const hasSelectedItems = computed(() => {
+  return (
+    selectedItems.value.nodes.size > 0 ||
+    selectedItems.value.wires.size > 0 ||
+    selectedItems.value.texts.size > 0
+  );
+});
 const svgRef = ref<SVGSVGElement>();
 const mouse = useMouseInElement(svgRef);
 const mouseInView = computed(() => {
@@ -249,10 +259,11 @@ const onAddText = () => {
   addTextProc();
   diagram.value?.saveHistory();
 };
-/**
- * Only when idle
- */
 const onDelete = () => {
+  if (editorStatus.value !== 'idle') {
+    ElMessage.error('Cannot delete while editing');
+    return;
+  }
   selectedItems.value.wires.forEach(id => {
     diagram.value?.removeWire(id);
   });
@@ -294,9 +305,7 @@ const onKeyUp = (e: KeyboardEvent) => {
     } else if (e.key === 'Escape') {
       onEscape();
     } else if (e.key === 'Delete') {
-      if (editorStatus.value == 'idle') {
-        onDelete();
-      }
+      onDelete();
     }
   }
 };
@@ -511,7 +520,85 @@ const onMove = (e: MouseEvent) => {
         <div class="header-text" style="margin: 10px">
           {{ readableFilename(pathname) }}
         </div>
-        <template #end> </template>
+        <template #end>
+          <ElDropdown>
+            <ElLink>
+              <span style="margin: 15px" class="header-text"> Elem </span>
+            </ElLink>
+            <template #dropdown>
+              <div class="header-text">
+                <ElDropdownItem @click="onAddNode()">
+                  Add Node (A)
+                </ElDropdownItem>
+                <ElDropdownItem
+                  :style="
+                    selectedItems.nodes.size
+                      ? {}
+                      : { color: 'var(--el-color-info)' }
+                  "
+                  @click="onAddWire()"
+                >
+                  Add Wire (W)
+                </ElDropdownItem>
+                <ElDropdownItem @click="onAddText()">
+                  Add Text (T)
+                </ElDropdownItem>
+                <ElDivider></ElDivider>
+                <ElDropdownItem
+                  :style="
+                    editorStatus !== 'idle'
+                      ? {}
+                      : { color: 'var(--el-color-info)' }
+                  "
+                  @click="onEscape()"
+                >
+                  Stop (Esc)
+                </ElDropdownItem>
+                <ElDropdownItem
+                  :style="
+                    editorStatus == 'idle' && hasSelectedItems
+                      ? {}
+                      : { color: 'var(--el-color-info)' }
+                  "
+                  @click="onDelete()"
+                >
+                  Delete (Del)
+                </ElDropdownItem>
+              </div>
+            </template>
+          </ElDropdown>
+
+          <ElDropdown>
+            <ElLink>
+              <span style="margin: 15px" class="header-text"> Edit </span>
+            </ElLink>
+            <template #dropdown>
+              <div>
+                <ElDropdownItem @click="onUndo()">
+                  Undo (Ctrl+Z)
+                </ElDropdownItem>
+                <ElDropdownItem @click="onRedo()">
+                  Redo (Ctrl+Y)
+                </ElDropdownItem>
+                <ElDropdownItem
+                  :style="
+                    hasSelectedItems ? {} : { color: 'var(--el-color-info)' }
+                  "
+                  @click="onCopy()"
+                >
+                  Copy (Ctrl+C)
+                </ElDropdownItem>
+                <ElDropdownItem @click="onPaste()">
+                  Paste (Ctrl+V)
+                </ElDropdownItem>
+                <ElDivider></ElDivider>
+                <ElDropdownItem @click="onSave()">
+                  Force Save (Ctrl+S)
+                </ElDropdownItem>
+              </div>
+            </template>
+          </ElDropdown>
+        </template>
       </LRMenu>
     </ElHeader>
     <ElMain class="no-padding no-scroll">

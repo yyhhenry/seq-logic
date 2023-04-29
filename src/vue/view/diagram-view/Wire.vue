@@ -44,7 +44,7 @@ const width = 4;
       :y2="end.y"
       :stroke="'var(--el-color-primary)'"
       :stroke-width="width + 5"
-      :stroke-dasharray="`${width * 3} ${width * 2}`"
+      :stroke-dasharray="`${width * 2} ${width * 3}`"
     >
     </line>
   </g>
