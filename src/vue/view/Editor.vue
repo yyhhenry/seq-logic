@@ -309,9 +309,15 @@ const nextTickTimer = setInterval(() => {
     }
   }
 }, 1000 / 60);
+const saveTimer = setInterval(() => {
+  if (diagram.value?.modified) {
+    onSave();
+  }
+}, 2000);
 onUnmounted(() => {
   window.removeEventListener('keyup', onKeyUp);
   clearInterval(nextTickTimer);
+  clearInterval(saveTimer);
 });
 const onWheel = (e: WheelEvent) => {
   if (diagram.value) {
