@@ -1,29 +1,29 @@
 <script setup lang="ts">
 import { Node, Status } from '@/util/SeqLogic';
 defineProps<{
-  id: string;
   node: Node;
   status: Status;
   selected: boolean;
 }>();
 const radius = 10;
+const probeRadius = 8;
 const padding = 5;
 </script>
 <template>
   <g>
-    <circle :cx="node.x" :cy="node.y" :r="radius" :fill="'var(--color-text)'" />
+    <circle :cx="node.x" :cy="node.y" :r="radius" :fill="'var(--color-heading)'" />
     <circle
-      v-if="status.powered"
+      v-if="node.powered"
       :cx="node.x"
       :cy="node.y"
-      :r="8"
+      :r="probeRadius"
       :fill="'var(--el-color-danger)'"
     />
     <circle
       v-else-if="status.active"
       :cx="node.x"
       :cy="node.y"
-      :r="10"
+      :r="probeRadius"
       :fill="'var(--el-color-primary)'"
     />
     <rect

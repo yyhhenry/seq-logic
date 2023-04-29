@@ -1,11 +1,1 @@
-{
-  "nodes": {
-    "0": { "x": 0, "y": 0, "powered": false },
-    "1": { "x": 40, "y": 80, "powered": false }
-  },
-  "wires": {
-    "2": { "start": "0", "end": "1", "not": true }
-  },
-  "texts": {},
-  "viewport": { "x": 0, "y": 0, "scale": 1 }
-}
+{"nodes":{"8e06a8ca-1b41-4c35-beff-59edf1ed652b":{"x":111.65728192566631,"y":65.70215903253204,"powered":false},"942ec92e-686e-4000-aa34-8b04a602a8c1":{"x":214.8313416472252,"y":66.19346407882517,"powered":false},"d74109d3-9d58-46f8-b2c6-5f78f3c0e5cb":{"x":111.16597687937316,"y":166.4196935226252,"powered":false},"a061fdd4-ffbb-42db-ab0c-e98c591a49db":{"x":213.8487315546389,"y":169.36752380038402,"powered":false},"303151f3-6d64-4f29-a30c-619d2c6a4840":{"x":161.77039664756632,"y":114.83266366184577,"powered":false}},"wires":{"95708b8a-96c4-4078-b319-76e2f8e9373f":{"start":"8e06a8ca-1b41-4c35-beff-59edf1ed652b","end":"942ec92e-686e-4000-aa34-8b04a602a8c1","not":false},"6a2a88a1-888b-4cca-9936-6c8f82cf996d":{"start":"8e06a8ca-1b41-4c35-beff-59edf1ed652b","end":"d74109d3-9d58-46f8-b2c6-5f78f3c0e5cb","not":false},"6b083ed2-852e-4ea9-98e5-36d837a0fce2":{"start":"d74109d3-9d58-46f8-b2c6-5f78f3c0e5cb","end":"a061fdd4-ffbb-42db-ab0c-e98c591a49db","not":false},"8e790985-2821-478b-bbfd-07a49db80ef3":{"start":"a061fdd4-ffbb-42db-ab0c-e98c591a49db","end":"942ec92e-686e-4000-aa34-8b04a602a8c1","not":false},"314ffa62-adf9-435a-9958-4faba0fac638":{"start":"8e06a8ca-1b41-4c35-beff-59edf1ed652b","end":"303151f3-6d64-4f29-a30c-619d2c6a4840","not":false},"e1e98349-17d0-45a3-be0a-081a093dd963":{"start":"942ec92e-686e-4000-aa34-8b04a602a8c1","end":"303151f3-6d64-4f29-a30c-619d2c6a4840","not":false},"5c2bd24c-fc59-4944-bd97-69583089a4d5":{"start":"d74109d3-9d58-46f8-b2c6-5f78f3c0e5cb","end":"303151f3-6d64-4f29-a30c-619d2c6a4840","not":false},"28d16123-5415-4fda-847d-9dbce43dbf07":{"start":"a061fdd4-ffbb-42db-ab0c-e98c591a49db","end":"303151f3-6d64-4f29-a30c-619d2c6a4840","not":false}},"texts":{"29ae5c0c-6b1f-4e66-b856-ce3c15277f46":{"x":161.77039664756632,"y":32.78472093089184,"text":"New Text","scale":1},"e417cb8f-d6a8-4ddc-bfcf-191c9ac9fda5":{"x":57.61372683342121,"y":121.21962926365657,"text":"New Text","scale":1},"79501286-cace-481b-b66a-87a7bec40ecc":{"x":165.70083701791145,"y":212.60236787418012,"text":"New Text","scale":1},"513ac139-a643-4b47-bd27-2cc9176c4e8d":{"x":285.57926831343696,"y":118.27179898589773,"text":"New Text","scale":1}},"viewport":{"x":99.60388798038277,"y":43.85886441665758,"scale":2.0353953364512147}}

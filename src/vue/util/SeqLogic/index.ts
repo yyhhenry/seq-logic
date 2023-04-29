@@ -359,6 +359,10 @@ export class Diagram {
             }
         }
         for (const id of needToRemove) {
+            const nextTick = this.status.get(id)?.nextTick;
+            if (nextTick != null) {
+                this.toggle.get(nextTick)?.delete(id);
+            }
             this.status.delete(id);
         }
         this.groupRoot = new Map(
@@ -466,14 +470,18 @@ export class Diagram {
         }) satisfies DiagramStorage as DiagramStorage;
     }
     merge(storage: DiagramStorage) {
+        const [dx, dy] = [
+            this.viewport.x - storage.viewport.x - (Math.random() * 10 + 10),
+            this.viewport.y - storage.viewport.y - (Math.random() * 10 + 10),
+        ];
         storage = remarkId(storage);
         [...Object.values(storage.nodes)].forEach(node => {
-            node.x += this.viewport.x - storage.viewport.x;
-            node.y += this.viewport.y - storage.viewport.y;
+            node.x -= dx;
+            node.y -= dy;
         });
         [...Object.values(storage.texts)].forEach(text => {
-            text.x += this.viewport.x - storage.viewport.x;
-            text.y += this.viewport.y - storage.viewport.y;
+            text.x -= dx;
+            text.y -= dy;
         });
         for (const [id, node] of Object.entries(storage.nodes)) {
             this.nodes.set(id, node);
@@ -534,8 +542,11 @@ export class Diagram {
         if (wire.start === wire.end) {
             return;
         }
-        if (this.wireWithNode.get(wire.start)?.has(wire.end)) {
-            return;
+        for (const wireId of this.wireWithNode.get(wire.start) ?? []) {
+            const w = _NNA(this.wires.get(wireId));
+            if (w.start === wire.end || w.end === wire.end) {
+                return;
+            }
         }
         this.wires.set(id, wire);
         return id;
