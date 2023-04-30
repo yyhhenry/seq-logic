@@ -1,4 +1,8 @@
-# SeqLogic
+# SeqLogic v1.0.1
+
+## Version 1.0.1 (unstable)
+
+改进显示，修复主页。
 
 ## 介绍
 
