@@ -10,6 +10,7 @@ const radius = 10;
 const probeRadius = 8;
 const padding = 5;
 const powered = computed(() => getPowered(props.node.powered));
+const hasClock = computed(() => typeof props.node.powered !== 'boolean');
 </script>
 <template>
   <g>
@@ -52,5 +53,21 @@ const powered = computed(() => getPowered(props.node.powered));
       :stroke-linejoin="'round'"
       :fill="'none'"
     ></rect>
+    <text
+      v-if="hasClock"
+      :x="node.x"
+      :y="node.y"
+      :text-anchor="'middle'"
+      :dominant-baseline="'middle'"
+      :fill="'var(--color-heading)'"
+      :font-size="'smaller'"
+    >
+      c
+    </text>
   </g>
 </template>
+<style scoped>
+text {
+  user-select: none;
+}
+</style>

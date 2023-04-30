@@ -15,6 +15,7 @@ const textRef = ref<SVGTextElement>();
       :y="text.y"
       :font-size="text.scale * 16"
       :text-anchor="'middle'"
+      :dominant-baseline="'middle'"
       :fill="selected ? 'var(--color-heading)' : 'var(--color-text)'"
       :stroke="selected ? 'var(--el-color-primary)' : 'none'"
     >

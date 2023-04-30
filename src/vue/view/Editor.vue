@@ -552,6 +552,8 @@ const editTextDialog = computed({
     if (!v) onEscape();
   },
 });
+const onHelp = () => {};
+const onAbout = () => {};
 </script>
 <template>
   <ElContainer class="root">
@@ -617,7 +619,7 @@ const editTextDialog = computed({
               <span style="margin: 15px" class="header-text"> Edit </span>
             </ElLink>
             <template #dropdown>
-              <div>
+              <div class="header-text">
                 <ElDropdownItem @click="onUndo()">
                   Undo (Ctrl+Z)
                 </ElDropdownItem>
@@ -639,6 +641,18 @@ const editTextDialog = computed({
                 <ElDropdownItem @click="onSave()">
                   Force Save (Ctrl+S)
                 </ElDropdownItem>
+              </div>
+            </template>
+          </ElDropdown>
+          
+          <ElDropdown>
+            <ElLink>
+              <span style="margin: 15px" class="header-text"> Docs </span>
+            </ElLink>
+            <template #dropdown>
+              <div class="header-text">
+                <ElDropdownItem @click="onHelp()"> Help </ElDropdownItem>
+                <ElDropdownItem @click="onAbout()"> About </ElDropdownItem>
               </div>
             </template>
           </ElDropdown>

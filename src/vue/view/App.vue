@@ -9,6 +9,7 @@ import {
   ElMain,
   ElRow,
   ElScrollbar,
+  ElSwitch,
 } from 'element-plus';
 import remote from '@/remote';
 import { useDark, useTitle, useToggle } from '@vueuse/core';
@@ -25,7 +26,6 @@ import { updateFile } from '@/util/database';
 const title = websiteName;
 useTitle(title);
 const dark = useDark();
-const toggle = useToggle(dark);
 const pathname = ref<string>();
 const files = promiseRef(getFiles(), []);
 const fetchFiles = async (pathname?: string) => {
@@ -80,16 +80,18 @@ const onNewFile = async () => {
           <div v-if="!dark" style="font-size: smaller">
             (We prefer Dark Mode)
           </div>
-          <ElButton
+          <ElSwitch
+            v-model="dark"
+            inline-prompt
+            :size="'large'"
+            :active-icon="Moon"
+            :inactive-icon="Sunny"
             :style="{
-              marginLeft: '10px',
-              marginRight: '10px',
+              '--el-switch-on-color': 'var(--color-background)',
+              '--el-switch-off-color': 'var(--el-color-info)',
             }"
-            :type="'info'"
-            :icon="dark ? Moon : Sunny"
-            @click="toggle()"
           >
-          </ElButton>
+          </ElSwitch>
         </template>
       </LRMenu>
     </ElHeader>
