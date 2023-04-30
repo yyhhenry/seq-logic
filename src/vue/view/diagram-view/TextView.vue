@@ -19,7 +19,7 @@ const textRef = ref<SVGTextElement>();
       :fill="selected ? 'var(--color-heading)' : 'var(--color-text)'"
       :stroke="selected ? 'var(--el-color-primary)' : 'none'"
     >
-      {{ text.text }}
+      {{ '# ' + text.text }}
     </text>
   </g>
 </template>

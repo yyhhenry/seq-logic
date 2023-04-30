@@ -20,7 +20,6 @@ const commit = () => {
   if (node.value === undefined) {
     throw new Error(`Node not found`);
   }
-  console.log('committing', node.value);
   props.diagram.nodes.set(props.id, node.value);
   props.diagram.commit();
 };

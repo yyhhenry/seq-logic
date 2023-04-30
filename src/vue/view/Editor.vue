@@ -11,7 +11,6 @@ import {
   ElDropdown,
   ElDropdownItem,
   ElLink,
-  ElCard,
   ElDivider,
   ElDialog,
 } from 'element-plus';
@@ -21,7 +20,7 @@ import { deleteFile } from '@/util/database';
 import { Diagram } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
 import { readableFilename } from '@/util/readable';
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
   useEventListener,
   useIntervalFn,
@@ -33,6 +32,9 @@ import Wire from './diagram-view/Wire.vue';
 import TextView from './diagram-view/TextView.vue';
 import { animeFrame } from '@/util/animeFrame';
 import EditNode from '@/view/editor-dialog/EditNode.vue';
+import EditWire from '@/view/editor-dialog/EditWire.vue';
+import EditText from '@/view/editor-dialog/EditText.vue';
+import HelpDialog from './editor-dialog/HelpDialog.vue';
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
@@ -67,10 +69,11 @@ const diagram = promiseRef(getDiagram());
 // - wheel to zoom
 // - ctrl drag to move
 // Show a error message if the operation is invalid
+// (idle or add) {
 // press A or click "Add node(A)" to clear selected items and to status: add-node
 // press W or click "Add wire(W)" when selected items contains any node to clear non-node selected items and to status: add-wire
 // press T or click "Add text(T)" to clear selected items to status: add-text
-// press Delete or click "Delete(Del)" when selected items contains any node, wire or text to delete them and to status: idle
+// (idle or add) }
 // press Esc or click "Cancel" to status: idle
 // double click a node to status: edit-node
 // double click a wire to status: edit-wire
@@ -78,11 +81,11 @@ const diagram = promiseRef(getDiagram());
 
 // status: idle
 // drag to select with a box
+// press Delete or click "Delete(Del)" when selected items contains any node, wire or text to delete them
 // shift click to select multiple (XOR)
 // click to select one node, wire or text
 // click blank to clear selected items
 // drag on selected to move selected nodes, wires and texts
-//
 
 // status: add-node
 // preview a node at the mouse position
@@ -319,16 +322,21 @@ const onKeyUp = (e: KeyboardEvent) => {
       onSave();
     }
   } else if (!e.shiftKey) {
-    if (e.key === 'a') {
-      onAddNode();
-    } else if (e.key === 'w') {
-      onAddWire();
-    } else if (e.key === 't') {
-      onAddText();
-    } else if (e.key === 'Escape') {
-      onEscape();
-    } else if (e.key === 'Delete') {
-      onDelete();
+    if (
+      editorStatus.value === 'idle' ||
+      editorStatus.value.startsWith('add-')
+    ) {
+      if (e.key === 'a') {
+        onAddNode();
+      } else if (e.key === 'w') {
+        onAddWire();
+      } else if (e.key === 't') {
+        onAddText();
+      } else if (e.key === 'Escape') {
+        onEscape();
+      } else if (e.key === 'Delete' && editorStatus.value === 'idle') {
+        onDelete();
+      }
     }
   }
 };
@@ -784,7 +792,7 @@ const aboutDialog = computed({
       </ElContainer>
     </ElMain>
   </ElContainer>
-  <ElDialog v-model="editNodeDialog" :title="'Edit Node'">
+  <ElDialog v-model="editNodeDialog" :title="'Edit Node'" :width="400">
     <EditNode
       :key="editNodeDialog ? 1 : 0"
       v-if="diagram"
@@ -792,17 +800,29 @@ const aboutDialog = computed({
       :id="[...selectedItems.nodes][0]"
     ></EditNode>
   </ElDialog>
-  <ElDialog v-model="editWireDialog" :title="'Edit Wire'">
-    <div :key="editWireDialog ? 1 : 0">wire</div>
+  <ElDialog v-model="editWireDialog" :title="'Edit Wire'" :width="400">
+    <EditWire
+      :key="editWireDialog ? 1 : 0"
+      v-if="diagram"
+      :diagram="diagram"
+      :id="[...selectedItems.wires][0]"
+    ></EditWire>
   </ElDialog>
-  <ElDialog v-model="editTextDialog" :title="'Edit Text'">
-    <div :key="editTextDialog ? 1 : 0">text</div>
+  <ElDialog v-model="editTextDialog" :title="'Edit Text'" :width="400">
+    <EditText
+      :key="editTextDialog ? 1 : 0"
+      v-if="diagram"
+      :diagram="diagram"
+      :id="[...selectedItems.texts][0]"
+    ></EditText>
   </ElDialog>
   <ElDialog v-model="helpDialog" :title="'Help'">
-    <div>help</div>
+    <HelpDialog></HelpDialog>
   </ElDialog>
   <ElDialog v-model="aboutDialog" :title="'About'">
-    <div>about</div>
+    <div>Seq Logic</div>
+    <div>Author: 严一涵等3人</div>
+    <div>Version: 数据结构大作业特别版</div>
   </ElDialog>
 </template>
 <style lang="scss" scoped>
