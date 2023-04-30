@@ -375,7 +375,11 @@ const onWheel = (e: WheelEvent) => {
     const [x, y] = [mouse.elementX.value, mouse.elementY.value];
     diagram.value.viewport.x -= x / diagram.value.viewport.scale;
     diagram.value.viewport.y -= y / diagram.value.viewport.scale;
-    diagram.value.viewport.scale *= 1 - e.deltaY / 1000;
+    if (e.deltaY > 0) {
+      diagram.value.viewport.scale *= 1 - e.deltaY / 1000;
+    } else {
+      diagram.value.viewport.scale /= 1 + e.deltaY / 1000;
+    }
     diagram.value.viewport.x += x / diagram.value.viewport.scale;
     diagram.value.viewport.y += y / diagram.value.viewport.scale;
     e.stopPropagation();
