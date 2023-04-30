@@ -112,7 +112,9 @@ type EditorStatus =
   | 'add-text'
   | 'edit-node'
   | 'edit-wire'
-  | 'edit-text';
+  | 'edit-text'
+  | 'docs-help'
+  | 'docs-about';
 const editorStatus = ref<EditorStatus>('idle');
 type ItemType = 'node' | 'wire' | 'text';
 const itemsTypeMap = {
@@ -552,8 +554,26 @@ const editTextDialog = computed({
     if (!v) onEscape();
   },
 });
-const onHelp = () => {};
-const onAbout = () => {};
+const onHelp = () => {
+  onEscape();
+  editorStatus.value = 'docs-help';
+};
+const onAbout = () => {
+  onEscape();
+  editorStatus.value = 'docs-about';
+};
+const helpDialog = computed({
+  get: () => editorStatus.value === 'docs-help',
+  set: v => {
+    if (!v) onEscape();
+  },
+});
+const aboutDialog = computed({
+  get: () => editorStatus.value === 'docs-about',
+  set: v => {
+    if (!v) onEscape();
+  },
+});
 </script>
 <template>
   <ElContainer class="root">
@@ -644,7 +664,7 @@ const onAbout = () => {};
               </div>
             </template>
           </ElDropdown>
-          
+
           <ElDropdown>
             <ElLink>
               <span style="margin: 15px" class="header-text"> Docs </span>
@@ -773,10 +793,16 @@ const onAbout = () => {};
     ></EditNode>
   </ElDialog>
   <ElDialog v-model="editWireDialog" :title="'Edit Wire'">
-    <div>wire</div>
+    <div :key="editWireDialog ? 1 : 0">wire</div>
   </ElDialog>
   <ElDialog v-model="editTextDialog" :title="'Edit Text'">
-    <div :key="`edit-text-${animeFrame}`">text</div>
+    <div :key="editTextDialog ? 1 : 0">text</div>
+  </ElDialog>
+  <ElDialog v-model="helpDialog" :title="'Help'">
+    <div>help</div>
+  </ElDialog>
+  <ElDialog v-model="aboutDialog" :title="'About'">
+    <div>about</div>
   </ElDialog>
 </template>
 <style lang="scss" scoped>

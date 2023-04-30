@@ -1,4 +1,4 @@
-import { clone } from 'lodash';
+import { cloneDeep } from 'lodash';
 import { v4 as uuid } from 'uuid';
 import { MaybeObject, isObjectMaybe } from '../types';
 import { isObjectOf } from '../types';
@@ -123,13 +123,12 @@ export class History<T> {
      */
     get(id: string) {
         const origin = this.items.get(id);
-        return clone(origin);
+        return cloneDeep(origin);
     }
-    /**
-     *  Do not modify the items.
-     */
     entries() {
-        return this.items.entries();
+        return [...this.items.keys()].map(
+            id => [id, _NNA(this.get(id))] satisfies [string, T]
+        );
     }
     keys() {
         return this.items.keys();
@@ -163,7 +162,7 @@ export class History<T> {
         const cur = this.history[this.current];
         const origin = this.items.get(id);
         const item = cur.get(id);
-        const inserted = clone(value);
+        const inserted = cloneDeep(value);
         if (item) {
             item.inserted = inserted;
         } else {
@@ -254,7 +253,7 @@ export const remarkId = (storage: DiagramStorage) => {
             text => [uuid(), text] satisfies [string, Text]
         )
     );
-    return clone({
+    return cloneDeep({
         nodes,
         wires,
         texts,
@@ -299,7 +298,7 @@ export class Diagram {
      * 在Vue的响应式语法影响下，禁止在构造函数中添加未来可能会被监听的this属性，所有this属性必须由当前方法立即得到
      */
     constructor(storage: DiagramStorage) {
-        storage = clone(storage);
+        storage = cloneDeep(storage);
         function recordToMap<T>(record: Record<string, T>) {
             return new History(new Map(Object.entries(record)));
         }
@@ -469,7 +468,7 @@ export class Diagram {
         const texts = Object.fromEntries(
             [...this.texts.entries()].filter(([id]) => textIds.has(id))
         );
-        return clone({
+        return cloneDeep({
             nodes,
             wires,
             texts,
@@ -588,7 +587,7 @@ export class Diagram {
         }
     }
     toStorage(): DiagramStorage {
-        return clone({
+        return cloneDeep({
             nodes: Object.fromEntries(this.nodes.entries()),
             wires: Object.fromEntries(this.wires.entries()),
             texts: Object.fromEntries(this.texts.entries()),

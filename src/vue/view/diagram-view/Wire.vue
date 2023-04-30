@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Status, Wire, Node } from '@/util/SeqLogic';
+import { write } from 'fs';
 import { computed } from 'vue';
 const props = defineProps<{
   wire: Wire;
@@ -35,7 +36,17 @@ const width = 4;
       :stroke-width="width"
       :stroke-dasharray="wire.not ? `${width * 2} ${width}` : 'none'"
     ></line>
-
+    <line
+      v-if="wire.not"
+      :x1="mid.x"
+      :y1="mid.y"
+      :x2="end.x"
+      :y2="end.y"
+      :stroke="'var(--el-color-info)'"
+      :stroke-width="width"
+      :stroke-dasharray="wire.not ? `${width} ${width * 2}` : 'none'"
+      :stroke-dashoffset="width"
+    ></line>
     <line
       v-if="selected"
       :x1="start.x"
