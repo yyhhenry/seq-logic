@@ -51,7 +51,7 @@ const getDiagram = async () => {
   } catch (e) {
     console.error(e);
     ElMessageBox.alert('Failed to open file: ' + props.pathname);
-    deleteFile(props.pathname);
+    await deleteFile(props.pathname);
     emits('close');
   }
 };
