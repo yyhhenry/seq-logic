@@ -31,9 +31,15 @@ const commit = () => {
 <template>
   <div v-if="text">
     <ElInput v-model="text.text" @change="commit()"> </ElInput>
-    <ElRow :justify="'space-between'" :align="'middle'" style="margin:10px">
+    <ElRow :justify="'space-between'" :align="'middle'" style="margin: 10px">
       <div class="header-text">Scale (x16pt)</div>
-      <ElInputNumber v-model="text.scale" :min="0.5" :max="2" :step="0.1">
+      <ElInputNumber
+        v-model="text.scale"
+        :min="0.2"
+        :max="5"
+        :step="0.1"
+        @change="commit()"
+      >
       </ElInputNumber>
     </ElRow>
   </div>
