@@ -80,7 +80,7 @@ const tab = computed({
               v-model="node.powered.offset"
               :controls-position="'right'"
               :min="0"
-              :max="node.powered.duration"
+              :max="2 * node.powered.duration"
               :step="100"
               @change="commit()"
             >

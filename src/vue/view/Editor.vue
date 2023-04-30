@@ -302,10 +302,20 @@ const onDelete = () => {
   diagram.value?.commit();
   clearSelectedItems();
 };
+const onSelectAll = () => {
+  if (editorStatus.value !== 'idle') {
+    ElMessage.error('Cannot select all while editing');
+    return;
+  }
+  selectedItems.value.nodes = new Set(diagram.value?.nodes.keys() ?? []);
+  selectedItems.value.wires = new Set(diagram.value?.wires.keys() ?? []);
+  selectedItems.value.texts = new Set(diagram.value?.texts.keys() ?? []);
+};
 const onKeyUp = (e: KeyboardEvent) => {
   if (mousePath.value !== undefined) {
     return;
   }
+  e.preventDefault();
   if (e.ctrlKey) {
     if (editorStatus.value !== 'idle') {
       return;
@@ -320,6 +330,8 @@ const onKeyUp = (e: KeyboardEvent) => {
       onRedo();
     } else if (e.key === 's') {
       onSave();
+    } else if (e.key === 'a') {
+      onSelectAll();
     }
   } else if (!e.shiftKey) {
     if (
@@ -537,6 +549,7 @@ const onMove = (e: MouseEvent) => {
   }
 };
 const onContextMenu = (e: MouseEvent, itemType: ItemType, id: string) => {
+  if (editorStatus.value !== 'idle') return;
   e.preventDefault();
   onEscape();
   clearSelectedItems();

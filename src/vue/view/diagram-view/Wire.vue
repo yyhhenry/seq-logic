@@ -54,8 +54,8 @@ const width = 4;
       :x2="end.x"
       :y2="end.y"
       :stroke="'var(--el-color-primary)'"
-      :stroke-width="width + 5"
-      :stroke-dasharray="`${width * 2} ${width * 3}`"
+      :stroke-width="width * 3"
+      :opacity="0.7"
     >
     </line>
   </g>

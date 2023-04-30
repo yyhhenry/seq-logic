@@ -160,6 +160,7 @@ const onNewFile = async () => {
 .button-card {
   margin: 10px;
   color: var(--color-text);
+  user-select: none;
   :hover {
     color: var(--color-heading);
     background-color: var(--color-background-mute);
