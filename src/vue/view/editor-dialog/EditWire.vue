@@ -38,7 +38,6 @@ const onReverse = () => {
     <ElRow :justify="'space-between'" :align="'middle'">
         <ElSwitch
           v-model="wire.not"
-          :inline-prompt="true"
           :active-text="'Not Gate'"
           :inactive-text="'None'"
           @change="commit()"
