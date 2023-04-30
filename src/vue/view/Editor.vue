@@ -512,7 +512,10 @@ const onMove = (e: MouseEvent) => {
         mouseInView.value.x - mousePath.value.x,
         mouseInView.value.y - mousePath.value.y,
       ];
-      if (!mousePath.value.activated && Math.sqrt(dx * dx + dy * dy) > 5) {
+      if (
+        !mousePath.value.activated &&
+        Math.sqrt(dx * dx + dy * dy) * diagram.value.viewport.scale > 5
+      ) {
         mousePath.value.activated = true;
         diagram.value.commit();
       }
