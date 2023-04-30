@@ -7,6 +7,7 @@ import {
   ElHeader,
   ElIcon,
   ElMain,
+  ElMessageBox,
   ElRow,
   ElScrollbar,
   ElSwitch,
@@ -17,9 +18,15 @@ import { promiseRef } from '@/util/promiseRef';
 import LRMenu from './components/LRMenu.vue';
 import Editor from './Editor.vue';
 import { ref } from 'vue';
-import { getFiles, FileRecord } from '@/util/database';
+import { getFiles, FileRecord, deleteFile } from '@/util/database';
 import { readableDate, readableFilename } from '@/util/readable';
-import { DocumentAdd, Download, Sunny, Moon } from '@element-plus/icons-vue';
+import {
+  DocumentAdd,
+  Download,
+  Sunny,
+  Moon,
+  Close,
+} from '@element-plus/icons-vue';
 import { getBlankDiagramStorage } from '@/util/SeqLogic';
 import { websiteName } from '@/util/websiteName';
 import { updateFile } from '@/util/database';
@@ -69,6 +76,18 @@ const onNewFile = async () => {
   }
   await remote.fs.writeFile(filePath, JSON.stringify(getBlankDiagramStorage()));
   await onOpen(filePath);
+};
+const onDelete = async (pathname: string) => {
+  ElMessageBox.confirm('Are you sure to remove this project from the list?', 'Warning', {
+    confirmButtonText: 'OK',
+    cancelButtonText: 'Cancel',
+    type: 'warning',
+  })
+    .then(async () => {
+      await deleteFile(pathname);
+      await fetchFiles();
+    })
+    .catch(() => {});
 };
 </script>
 <template>
@@ -127,7 +146,17 @@ const onNewFile = async () => {
                   </h2>
                   <p class="long-text">{{ file.pathname }}</p>
                 </div>
-                <span class="header-text">{{ readableDate(file.updatedTime) }}</span>
+                <ElRow :align="'middle'">
+                  <span class="header-text">{{
+                    readableDate(file.updatedTime)
+                  }}</span>
+                  <ElButton
+                    :text="true"
+                    :icon="Close"
+                    @click="onDelete(file.pathname)"
+                  >
+                  </ElButton>
+                </ElRow>
               </ElRow>
             </ElCard>
           </ElCol>

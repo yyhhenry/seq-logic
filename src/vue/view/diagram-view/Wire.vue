@@ -16,6 +16,25 @@ const mid = computed(() => ({
   y: (props.start.y + props.end.y) / 2,
 }));
 const width = 4;
+const angle = computed(() => {
+  const dx = props.end.x - props.start.x;
+  const dy = props.end.y - props.start.y;
+  return Math.atan2(dy, dx);
+});
+// draw not gate
+const gateRadius = 8;
+const angleOffset = [0, (-2 / 3) * Math.PI, (2 / 3) * Math.PI];
+const positions = computed(() =>
+  angleOffset.map(offset => ({
+    x: mid.value.x + gateRadius * Math.cos(angle.value + offset),
+    y: mid.value.y + gateRadius * Math.sin(angle.value + offset),
+  }))
+);
+const gate = computed(() => {
+  const toStr = (i: number) =>
+    `${positions.value[i].x} ${positions.value[i].y}`;
+  return `M ${toStr(0)} L ${toStr(1)} L ${toStr(2)} Z`;
+});
 </script>
 <template>
   <g>
@@ -24,7 +43,7 @@ const width = 4;
       :y1="start.y"
       :x2="mid.x"
       :y2="mid.y"
-      :stroke="startPart ? 'var(--el-color-danger)' : 'var(--color-heading)'"
+      :stroke="startPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
       :stroke-width="width"
     ></line>
     <line
@@ -32,21 +51,25 @@ const width = 4;
       :y1="mid.y"
       :x2="end.x"
       :y2="end.y"
-      :stroke="endPart ? 'var(--el-color-danger)' : 'var(--color-heading)'"
+      :stroke="endPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
       :stroke-width="width"
-      :stroke-dasharray="wire.not ? `${width * 2} ${width}` : 'none'"
     ></line>
-    <line
+    <path
       v-if="wire.not"
-      :x1="mid.x"
-      :y1="mid.y"
-      :x2="end.x"
-      :y2="end.y"
-      :stroke="'var(--el-color-info)'"
-      :stroke-width="width"
-      :stroke-dasharray="wire.not ? `${width} ${width * 2}` : 'none'"
-      :stroke-dashoffset="width"
-    ></line>
+      :d="gate"
+      :stroke="startPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
+      :stroke-width="width / 2"
+      :fill="'var(--color-background)'"
+    ></path>
+    <circle
+      v-if="wire.not"
+      :cx="positions[0].x"
+      :cy="positions[0].y"
+      :r="width /2"
+      :stroke="endPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
+      :stroke-width="width / 2"
+      :fill="'var(--color-background)'"
+    ></circle>
     <line
       v-if="selected"
       :x1="start.x"

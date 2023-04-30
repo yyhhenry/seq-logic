@@ -57,9 +57,11 @@ const getDiagram = async () => {
 };
 const onClose = async () => {
   onEscape();
-  onSave();
   ElMessageBox.confirm('Close now?')
     .then(() => {
+      if (diagram.value?.modified) {
+        onSave();
+      }
       emits('close');
     })
     .catch(() => {});
