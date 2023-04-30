@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Node, Status } from '@/util/SeqLogic';
-defineProps<{
+import { Node, Status, getPowered } from '@/util/SeqLogic';
+import { computed } from 'vue';
+const props = defineProps<{
   node: Node;
   status: Status;
   selected: boolean;
@@ -8,12 +9,18 @@ defineProps<{
 const radius = 10;
 const probeRadius = 8;
 const padding = 5;
+const powered = computed(() => getPowered(props.node.powered));
 </script>
 <template>
   <g>
-    <circle :cx="node.x" :cy="node.y" :r="radius" :fill="'var(--color-heading)'" />
     <circle
-      v-if="node.powered"
+      :cx="node.x"
+      :cy="node.y"
+      :r="radius"
+      :fill="'var(--color-heading)'"
+    />
+    <circle
+      v-if="powered"
       :cx="node.x"
       :cy="node.y"
       :r="probeRadius"

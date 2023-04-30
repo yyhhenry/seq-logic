@@ -13,6 +13,7 @@ import {
   ElLink,
   ElCard,
   ElDivider,
+  ElDialog,
 } from 'element-plus';
 import { Close } from '@element-plus/icons-vue';
 import LRMenu from './components/LRMenu.vue';
@@ -31,6 +32,7 @@ import { isDiagramStorage } from '@/util/SeqLogic';
 import Wire from './diagram-view/Wire.vue';
 import TextView from './diagram-view/TextView.vue';
 import { animeFrame } from '@/util/animeFrame';
+import EditNode from '@/view/editor-dialog/EditNode.vue';
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
@@ -52,6 +54,7 @@ const getDiagram = async () => {
   }
 };
 const onClose = async () => {
+  onEscape();
   ElMessageBox.confirm('Close now?')
     .then(() => {
       emits('close');
@@ -70,6 +73,7 @@ const diagram = promiseRef(getDiagram());
 // press Delete or click "Delete(Del)" when selected items contains any node, wire or text to delete them and to status: idle
 // press Esc or click "Cancel" to status: idle
 // double click a node to status: edit-node
+// double click a wire to status: edit-wire
 // double click a text to status: edit-text
 
 // status: idle
@@ -111,6 +115,16 @@ type EditorStatus =
   | 'edit-text';
 const editorStatus = ref<EditorStatus>('idle');
 type ItemType = 'node' | 'wire' | 'text';
+const itemsTypeMap = {
+  node: 'nodes',
+  wire: 'wires',
+  text: 'texts',
+} satisfies Record<ItemType, ItemsType>;
+const editStatusMap = {
+  node: 'edit-node',
+  wire: 'edit-wire',
+  text: 'edit-text',
+} satisfies Record<ItemType, EditorStatus>;
 type ItemsType = `${ItemType}s`;
 type SelectedItems = Record<ItemsType, Set<string>>;
 const selectedItems = ref<SelectedItems>({
@@ -184,7 +198,9 @@ const onSave = () => {
 };
 const onEscape = () => {
   if (editorStatus.value !== 'idle') {
-    diagram.value?.undo();
+    if (editorStatus.value.startsWith('add-')) {
+      diagram.value?.undo();
+    }
     editorStatus.value = 'idle';
   }
 };
@@ -243,7 +259,7 @@ const onAddNode = () => {
   editorStatus.value = 'add-node';
   clearSelectedItems();
   addNodeProc();
-  diagram.value?.saveHistory();
+  diagram.value?.commit();
 };
 const onAddWire = () => {
   onEscape();
@@ -255,14 +271,14 @@ const onAddWire = () => {
   selectedItems.value.wires = new Set();
   selectedItems.value.texts = new Set();
   addWireProc();
-  diagram.value?.saveHistory();
+  diagram.value?.commit();
 };
 const onAddText = () => {
   onEscape();
   editorStatus.value = 'add-text';
   clearSelectedItems();
   addTextProc();
-  diagram.value?.saveHistory();
+  diagram.value?.commit();
 };
 const onDelete = () => {
   if (editorStatus.value !== 'idle') {
@@ -278,7 +294,7 @@ const onDelete = () => {
   selectedItems.value.texts.forEach(id => {
     diagram.value?.removeText(id);
   });
-  diagram.value?.saveHistory();
+  diagram.value?.commit();
   clearSelectedItems();
 };
 const onKeyUp = (e: KeyboardEvent) => {
@@ -354,6 +370,7 @@ const onMouseDown = (
   itemType: ItemType | 'blank',
   id: string
 ) => {
+  if (e.button !== 0) return;
   e.stopPropagation();
   if (editorStatus.value === 'idle') {
     mousePath.value = {
@@ -371,7 +388,7 @@ const onMouseDown = (
     if (e.shiftKey) {
       if (itemType === 'blank') {
       } else {
-        const itemsType = (itemType + 's') as ItemsType;
+        const itemsType = itemsTypeMap[itemType];
         if (selectedItems.value[itemsType].has(id)) {
           selectedItems.value[itemsType].delete(id);
         } else {
@@ -382,7 +399,7 @@ const onMouseDown = (
       if (itemType === 'blank') {
         clearSelectedItems();
       } else {
-        const itemsType = (itemType + 's') as ItemsType;
+        const itemsType = itemsTypeMap[itemType];
         if (!selectedItems.value[itemsType].has(id)) {
           clearSelectedItems();
           selectedItems.value[itemsType].add(id);
@@ -391,7 +408,8 @@ const onMouseDown = (
     }
   }
 };
-const onMouseUp = () => {
+const onMouseUp = (e: MouseEvent) => {
+  if (e.button !== 0) return;
   if (mousePath.value !== undefined) {
     if (!diagram.value) return;
     if (
@@ -439,13 +457,13 @@ const onMouseUp = () => {
     mousePath.value = undefined;
   } else if (editorStatus.value === 'add-node') {
     if (!diagram.value) return;
-    diagram.value.saveHistory();
+    diagram.value.commit();
   } else if (editorStatus.value === 'add-text') {
     if (!diagram.value) return;
-    diagram.value.saveHistory();
+    diagram.value.commit();
   } else if (editorStatus.value === 'add-wire') {
     if (!diagram.value) return;
-    diagram.value.saveHistory();
+    diagram.value.commit();
   }
 };
 const onMove = (e: MouseEvent) => {
@@ -461,7 +479,7 @@ const onMove = (e: MouseEvent) => {
       ];
       if (!mousePath.value.activated && Math.sqrt(dx * dx + dy * dy) > 5) {
         mousePath.value.activated = true;
-        diagram.value.saveHistory();
+        diagram.value.commit();
       }
       if (mousePath.value.activated) {
         diagram.value.undo();
@@ -488,26 +506,52 @@ const onMove = (e: MouseEvent) => {
             diagram.value.texts.set(id, text);
           }
         }
-        diagram.value.saveHistory();
+        diagram.value.commit();
       }
     }
   } else if (editorStatus.value === 'add-node') {
     if (!diagram.value) return;
     diagram.value.undo();
     addNodeProc();
-    diagram.value.saveHistory();
+    diagram.value.commit();
   } else if (editorStatus.value === 'add-text') {
     if (!diagram.value) return;
     diagram.value.undo();
     addTextProc();
-    diagram.value.saveHistory();
+    diagram.value.commit();
   } else if (editorStatus.value === 'add-wire') {
     if (!diagram.value) return;
     diagram.value.undo();
     addWireProc();
-    diagram.value.saveHistory();
+    diagram.value.commit();
   }
 };
+const onContextMenu = (e: MouseEvent, itemType: ItemType, id: string) => {
+  e.preventDefault();
+  onEscape();
+  clearSelectedItems();
+  const itemsType = itemsTypeMap[itemType];
+  selectedItems.value[itemsType].add(id);
+  editorStatus.value = editStatusMap[itemType];
+};
+const editNodeDialog = computed({
+  get: () => editorStatus.value === 'edit-node',
+  set: v => {
+    if (!v) onEscape();
+  },
+});
+const editWireDialog = computed({
+  get: () => editorStatus.value === 'edit-wire',
+  set: v => {
+    if (!v) onEscape();
+  },
+});
+const editTextDialog = computed({
+  get: () => editorStatus.value === 'edit-text',
+  set: v => {
+    if (!v) onEscape();
+  },
+});
 </script>
 <template>
   <ElContainer class="root">
@@ -605,14 +649,14 @@ const onMove = (e: MouseEvent) => {
       <ElContainer class="full-height full-width">
         <ElMain class="no-padding no-scroll">
           <svg
-            :key="animeFrame"
+            :key="`svg-${animeFrame}`"
             class="full-height full-width"
             ref="svgRef"
             v-if="diagram !== undefined"
             @mousemove="e => onMove(e)"
             @wheel="e => onWheel(e)"
             @mousedown="e => onMouseDown(e, 'blank', '')"
-            @mouseup="onMouseUp()"
+            @mouseup="e => onMouseUp(e)"
           >
             <g
               :transform="`scale(${diagram?.viewport.scale}), translate(${diagram?.viewport.x}, ${diagram?.viewport.y})`"
@@ -628,6 +672,7 @@ const onMove = (e: MouseEvent) => {
               <g
                 v-for="[id, wire] of diagram.wires.entries()"
                 @mousedown="e => onMouseDown(e, 'wire', id)"
+                @contextmenu="e => onContextMenu(e, 'wire', id)"
               >
                 <Wire
                   :wire="wire"
@@ -652,6 +697,7 @@ const onMove = (e: MouseEvent) => {
               <g
                 v-for="[id, node] of diagram.nodes.entries()"
                 @mousedown="e => onMouseDown(e, 'node', id)"
+                @contextmenu="e => onContextMenu(e, 'node', id)"
               >
                 <Node
                   :node="node"
@@ -662,6 +708,7 @@ const onMove = (e: MouseEvent) => {
               <g
                 v-for="[id, text] of diagram.texts.entries()"
                 @mousedown="e => onMouseDown(e, 'text', id)"
+                @contextmenu="e => onContextMenu(e, 'text', id)"
               >
                 <TextView
                   :text="text"
@@ -703,6 +750,20 @@ const onMove = (e: MouseEvent) => {
       </ElContainer>
     </ElMain>
   </ElContainer>
+  <ElDialog v-model="editNodeDialog" :title="'Edit Node'">
+    <EditNode
+      :key="editNodeDialog ? 1 : 0"
+      v-if="diagram"
+      :diagram="diagram"
+      :id="[...selectedItems.nodes][0]"
+    ></EditNode>
+  </ElDialog>
+  <ElDialog v-model="editWireDialog" :title="'Edit Wire'">
+    <div>wire</div>
+  </ElDialog>
+  <ElDialog v-model="editTextDialog" :title="'Edit Text'">
+    <div :key="`edit-text-${animeFrame}`">text</div>
+  </ElDialog>
 </template>
 <style lang="scss" scoped>
 .root {

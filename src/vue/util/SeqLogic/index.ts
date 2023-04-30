@@ -29,14 +29,12 @@ export const isClock = (u: unknown): u is Clock => {
     );
 };
 export interface Node extends Coordinate {
-    powered: boolean;
-    clock?: Clock;
+    powered: boolean | Clock;
 }
 export const isNode = (u: unknown): u is Node => {
     return (
         isCoordinate<Node>(u) &&
-        typeof u.powered === 'boolean' &&
-        (u.clock === undefined || isClock(u.clock))
+        (typeof u.powered === 'boolean' || isClock(u.powered))
     );
 };
 export interface Wire {
@@ -98,7 +96,7 @@ export interface BaseModification<T> {
 /**
  * 自动保存历史记录
  * 默认指针在最后一条记录，初始在0
- * 每次进行一次独立修改时saveHistory()
+ * 每次进行一次独立修改时commit()
  */
 export class History<T> {
     private items: Map<string, T>;
@@ -114,7 +112,7 @@ export class History<T> {
         this.items = items;
         this.history = [];
         this.current = -1;
-        this.saveHistory();
+        this.commit();
         this.status = 'committed';
     }
     has(id: string) {
@@ -176,7 +174,7 @@ export class History<T> {
     /**
      * End modifying.
      */
-    saveHistory() {
+    commit() {
         this.beforeModify();
         this.history.push(new Map<string, BaseModification<T>>());
         this.current++;
@@ -263,10 +261,20 @@ export const remarkId = (storage: DiagramStorage) => {
         viewport: storage.viewport,
     } satisfies DiagramStorage);
 };
+export function getPowered(powered: boolean | Clock): boolean {
+    if (typeof powered === 'boolean') {
+        return powered;
+    } else {
+        powered;
+        const cur = Date.now() - powered.offset;
+        const idx = Math.floor(cur / powered.duration);
+        return idx % 2 === 0;
+    }
+}
 /**
  * A diagram.
  *
- * 更新后调用saveHistory()，如果不需要re-parse，就传入false。
+ * 更新后调用commit()，如果不需要re-parse，就传入false。
  * You should not update the existence of the nodes, wires and texts. You should call add and remove instead.
  * When updating the viewport, no need to call anything and there is no history.
  *
@@ -301,7 +309,9 @@ export class Diagram {
         this.status = new Map(
             [...this.nodes.entries()].map(([id, { powered }]) => [
                 id,
-                { active: powered, powered },
+                getPowered(powered)
+                    ? { active: true, powered: true }
+                    : { active: false, powered: false },
             ])
         );
         this.toggle = new Map();
@@ -341,12 +351,9 @@ export class Diagram {
             _NNA(this.wireWithNode.get(wire.start)).add(id);
             _NNA(this.wireWithNode.get(wire.end)).add(id);
         }
-        for (const [id, node] of this.nodes.entries()) {
+        for (const id of this.nodes.keys()) {
             if (this.status.get(id) == null) {
-                this.status.set(id, {
-                    active: node.powered,
-                    powered: node.powered,
-                });
+                this.status.set(id, { active: false, powered: false });
             }
         }
         const needToRemove = new Set<string>();
@@ -355,7 +362,7 @@ export class Diagram {
             if (node == null) {
                 needToRemove.add(id);
             } else {
-                status.powered = node.powered;
+                status.powered = getPowered(node.powered);
             }
         }
         for (const id of needToRemove) {
@@ -492,7 +499,7 @@ export class Diagram {
         for (const [id, text] of Object.entries(storage.texts)) {
             this.texts.set(id, text);
         }
-        this.saveHistory();
+        this.commit();
         return {
             nodes: new Set(Object.keys(storage.nodes)),
             wires: new Set(Object.keys(storage.wires)),
@@ -505,11 +512,11 @@ export class Diagram {
     /**
      * Save the history to handle undo and redo.
      */
-    saveHistory() {
+    commit() {
         this.modified = true;
-        this.nodes.saveHistory();
-        this.wires.saveHistory();
-        this.texts.saveHistory();
+        this.nodes.commit();
+        this.wires.commit();
+        this.texts.commit();
         this.parse();
     }
     undo() {
@@ -598,25 +605,7 @@ export class Diagram {
         }
     }
     fetchClock() {
-        const now = Date.now();
-        let modified = false;
-        for (const [id, node] of this.nodes.entries()) {
-            if (node.clock) {
-                const cur = now - node.clock.offset;
-                const idx = Math.floor(cur / node.clock.duration);
-                const powered = idx % 2 === 0;
-                if (node.powered !== powered) {
-                    this.nodes.set(id, {
-                        ...node,
-                        powered,
-                    });
-                    modified = true;
-                }
-            }
-        }
-        if (modified) {
-            this.saveHistory();
-        }
+        this.parse();
     }
     async saveFile(pathname: string) {
         const storage = this.toStorage();
