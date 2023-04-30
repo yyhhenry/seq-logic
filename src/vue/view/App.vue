@@ -119,15 +119,15 @@ const onNewFile = async () => {
             </ElRow>
           </ElCol>
           <ElCol :span="24" :md="16" v-for="file of files">
-            <ElCard class="button-card" @click="onOpen(file.pathname)">
+            <ElCard class="button-card" @dblclick="onOpen(file.pathname)">
               <ElRow :justify="'space-between'" :align="'middle'">
                 <div>
                   <h2 class="header-text">
                     {{ readableFilename(file.pathname) }}
                   </h2>
-                  <p>{{ file.pathname }}</p>
+                  <p class="long-text">{{ file.pathname }}</p>
                 </div>
-                <span>{{ readableDate(file.updatedTime) }}</span>
+                <span class="header-text">{{ readableDate(file.updatedTime) }}</span>
               </ElRow>
             </ElCard>
           </ElCol>
@@ -138,6 +138,12 @@ const onNewFile = async () => {
   <Editor v-else :key="pathname" :pathname="pathname" @close="onClose()" />
 </template>
 <style lang="scss" scoped>
+.long-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
 .root {
   height: 100vh;
 }
@@ -160,7 +166,6 @@ const onNewFile = async () => {
 .button-card {
   margin: 10px;
   color: var(--color-text);
-  user-select: none;
   :hover {
     color: var(--color-heading);
     background-color: var(--color-background-mute);

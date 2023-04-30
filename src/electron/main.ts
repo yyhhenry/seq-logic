@@ -18,6 +18,7 @@ const createWindow = () => {
             preload: path.join(mainFolder, 'electron/preload.js'),
             nodeIntegration: true,
         },
+        useContentSize: true,
         show: false,
     });
     mainWindow.on('ready-to-show', () => mainWindow.show());
