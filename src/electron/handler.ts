@@ -4,7 +4,7 @@ import path from 'path';
 import { isDevelopmentMode } from './isDevelopmentMode';
 const mainRemote = {
     app: {
-        getPath: app.getPath,
+        getPath: app.getPath.bind(app),
     },
     dialog,
 };
