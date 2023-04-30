@@ -1,4 +1,5 @@
 /electron-dist
 /node_modules
 /dist 
-/extraFiles
+/extraFiles/*
+!/extraFiles/samples
