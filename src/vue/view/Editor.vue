@@ -247,6 +247,7 @@ const addWireProc = () => {
       not: false,
     });
   }
+  return end;
 };
 const addTextProc = () => {
   if (!diagram.value) {
@@ -485,7 +486,12 @@ const onMouseUp = (e: MouseEvent) => {
     diagram.value.commit();
   } else if (editorStatus.value === 'add-wire') {
     if (!diagram.value) return;
+    diagram.value.undo();
+    const newFocus = addWireProc();
     diagram.value.commit();
+    diagram.value.commit();
+    clearSelectedItems();
+    selectedItems.value.nodes.add(newFocus);
   }
 };
 const onMove = (e: MouseEvent) => {
