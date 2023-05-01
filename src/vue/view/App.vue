@@ -67,7 +67,7 @@ const onImport = async () => {
 const onNewFile = async () => {
   const { filePath } = await remote.main['dialog.showSaveDialog']({
     title: 'New Seq Logic Project',
-    defaultPath: await remote.getExtraPath(),
+    defaultPath: await remote.main['app.getPath']('documents'),
     filters: [{ name: 'Seq Logic', extensions: ['seq.json'] }],
     properties: ['createDirectory'],
   });
