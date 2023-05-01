@@ -1,6 +1,6 @@
 {
   "name": "seq-logic",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SeqLogic",
   "main": "dist/electron/main.js",
   "scripts": {
