@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Status, Wire, Node } from '@/util/SeqLogic';
-import { write } from 'fs';
 import { computed } from 'vue';
 const props = defineProps<{
   wire: Wire;
@@ -9,8 +8,8 @@ const props = defineProps<{
   startStatus: Status;
   selected: boolean;
 }>();
-const startPart = props.startStatus.active;
-const endPart = props.wire.not ? !startPart : startPart;
+const startPart = computed(() => props.startStatus.active);
+const endPart = computed(() => (props.wire.not ? !startPart.value : startPart.value));
 const mid = computed(() => ({
   x: (props.start.x + props.end.x) / 2,
   y: (props.start.y + props.end.y) / 2,
@@ -65,7 +64,7 @@ const gate = computed(() => {
       v-if="wire.not"
       :cx="positions[0].x"
       :cy="positions[0].y"
-      :r="width /2"
+      :r="width / 2"
       :stroke="endPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
       :stroke-width="width / 2"
       :fill="'var(--color-background)'"

@@ -4,6 +4,7 @@ import { MaybeObject, isObjectMaybe } from '../types';
 import { isObjectOf } from '../types';
 import remote from '@/remote';
 import { ElMessage } from 'element-plus';
+import { animeFrame, animeFrameTimestamp } from '../animeFrame';
 interface Coordinate {
     x: number;
     y: number;
@@ -125,10 +126,11 @@ export class History<T> {
         const origin = this.items.get(id);
         return cloneDeep(origin);
     }
+    /**
+     * Should not modify the result.
+     */
     entries() {
-        return [...this.items.keys()].map(
-            id => [id, _NNA(this.get(id))] satisfies [string, T]
-        );
+        return this.items.entries();
     }
     keys() {
         return this.items.keys();
@@ -264,8 +266,7 @@ export function getPowered(powered: boolean | Clock): boolean {
     if (typeof powered === 'boolean') {
         return powered;
     } else {
-        powered;
-        const cur = Date.now() - powered.offset;
+        const cur = animeFrameTimestamp.value - powered.offset;
         const idx = Math.floor(cur / powered.duration);
         return idx % 2 === 0;
     }
@@ -505,7 +506,7 @@ export class Diagram {
             texts: new Set(Object.keys(storage.texts)),
         };
     }
-    getNodeStatus(nodeId: string) {
+    getNodeStatus(nodeId: string, _animeFrame?:number) {
         return _NNA(this.status.get(_NNA(this.getGroupRoot(nodeId))));
     }
     /**

@@ -360,8 +360,12 @@ useEventListener('keyup', onKeyUp);
 useIntervalFn(() => {
   if (diagram.value) {
     diagram.value.fetchClock();
+    const now = Date.now();
     for (let i = 0; i < 10; i++) {
       diagram.value.nextTick();
+      if(Date.now() - now > 10) {
+        break;
+      }
     }
   }
 }, 1000 / 60);
@@ -720,7 +724,6 @@ const aboutDialog = computed({
       <ElContainer class="full-height full-width">
         <ElMain class="no-padding no-scroll">
           <svg
-            :key="`svg-${animeFrame}`"
             class="full-height full-width"
             ref="svgRef"
             v-if="diagram !== undefined"

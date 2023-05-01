@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { Text as SeqText } from '@/util/SeqLogic';
-import { ref } from 'vue';
 defineProps<{
   text: SeqText;
   selected: boolean;
 }>();
-const textRef = ref<SVGTextElement>();
 </script>
 <template>
   <g>
