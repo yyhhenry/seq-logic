@@ -203,6 +203,15 @@ const onPaste = () => {
 const onResetTimestamp = () => {
   resetStartTimestamp();
 };
+const onResetViewport = () => {
+  if (diagram.value) {
+    diagram.value.viewport = {
+      x: 0,
+      y: 0,
+      scale: 1,
+    };
+  }
+};
 const onSave = () => {
   if (diagram.value) {
     diagram.value.saveFile(props.pathname);
@@ -703,6 +712,9 @@ const aboutDialog = computed({
                   Paste (Ctrl+V)
                 </ElDropdownItem>
                 <ElDivider></ElDivider>
+                <ElDropdownItem @click="onResetViewport()">
+                  Reset Viewport
+                </ElDropdownItem>
                 <ElDropdownItem @click="onResetTimestamp()">
                   Reset Timestamp
                 </ElDropdownItem>
@@ -818,8 +830,14 @@ const aboutDialog = computed({
         </ElMain>
         <ElFooter class="editor-footer" height="2rem">
           <ElRow class="full-height" :align="'middle'">
-            <div class="margin-in-line" :title="'Status'">{{ editorStatus }}</div>
-            <div class="margin-in-line" :title="'Viewport'" v-if="diagram !== undefined">
+            <div class="margin-in-line" :title="'Status'">
+              {{ editorStatus }}
+            </div>
+            <div
+              class="margin-in-line"
+              :title="'Viewport'"
+              v-if="diagram !== undefined"
+            >
               {{
                 `${diagram.viewport.x.toFixed(2)}:${diagram.viewport.y.toFixed(
                   2
@@ -830,7 +848,7 @@ const aboutDialog = computed({
               {{ `${mouseInView.x.toFixed(0)}:${mouseInView.y.toFixed(0)}` }}
             </div>
             <div class="margin-in-line" :title="'Time'">
-              {{ `${(animeFrameTimestamp/1000).toFixed(1)}s` }}
+              {{ `${(animeFrameTimestamp / 1000).toFixed(1)}s` }}
             </div>
           </ElRow>
         </ElFooter>
