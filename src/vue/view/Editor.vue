@@ -415,51 +415,54 @@ interface MousePath {
   activated: boolean;
 }
 const mousePath = ref<MousePath>();
+const blockContentMenu = ref(false);
 const onMouseDown = (
   e: MouseEvent,
   itemType: ItemType | 'blank',
   id: string
 ) => {
-  if (e.button !== 0) return;
   e.stopPropagation();
   if (editorStatus.value === 'idle') {
     mousePath.value = {
       x: mouseInView.value.x,
       y: mouseInView.value.y,
-      mode: e.ctrlKey
-        ? 'move-viewport'
-        : e.shiftKey
-        ? 'box-toggle-select'
-        : itemType == 'blank'
-        ? 'box-select'
-        : 'drag-selected',
+      mode:
+        e.ctrlKey || e.button == 2
+          ? 'move-viewport'
+          : e.shiftKey
+          ? 'box-toggle-select'
+          : itemType == 'blank'
+          ? 'box-select'
+          : 'drag-selected',
       activated: false,
     };
-    if (e.shiftKey) {
-      if (itemType === 'blank') {
-      } else {
-        const itemsType = itemsTypeMap[itemType];
-        if (selectedItems.value[itemsType].has(id)) {
-          selectedItems.value[itemsType].delete(id);
+    blockContentMenu.value = false;
+    if (e.button == 0) {
+      if (e.shiftKey) {
+        if (itemType === 'blank') {
         } else {
-          selectedItems.value[itemsType].add(id);
+          const itemsType = itemsTypeMap[itemType];
+          if (selectedItems.value[itemsType].has(id)) {
+            selectedItems.value[itemsType].delete(id);
+          } else {
+            selectedItems.value[itemsType].add(id);
+          }
         }
-      }
-    } else if (!e.ctrlKey) {
-      if (itemType === 'blank') {
-        clearSelectedItems();
-      } else {
-        const itemsType = itemsTypeMap[itemType];
-        if (!selectedItems.value[itemsType].has(id)) {
+      } else if (!e.ctrlKey) {
+        if (itemType === 'blank') {
           clearSelectedItems();
-          selectedItems.value[itemsType].add(id);
+        } else {
+          const itemsType = itemsTypeMap[itemType];
+          if (!selectedItems.value[itemsType].has(id)) {
+            clearSelectedItems();
+            selectedItems.value[itemsType].add(id);
+          }
         }
       }
     }
   }
 };
-const onMouseUp = (e: MouseEvent) => {
-  if (e.button !== 0) return;
+const onMouseUp = (_e: MouseEvent) => {
   if (mousePath.value !== undefined) {
     if (!diagram.value) return;
     if (
@@ -525,8 +528,21 @@ const onMove = (e: MouseEvent) => {
   if (mousePath.value !== undefined) {
     if (!diagram.value) return;
     if (mousePath.value.mode == 'move-viewport') {
-      diagram.value.viewport.x += e.movementX / diagram.value.viewport.scale;
-      diagram.value.viewport.y += e.movementY / diagram.value.viewport.scale;
+      const [dx, dy] = [
+        mouseInView.value.x - mousePath.value.x,
+        mouseInView.value.y - mousePath.value.y,
+      ];
+      if (
+        !mousePath.value.activated &&
+        Math.sqrt(dx * dx + dy * dy) * diagram.value.viewport.scale > 5
+      ) {
+        mousePath.value.activated = true;
+      }
+      if (mousePath.value.activated) {
+        blockContentMenu.value = true;
+        diagram.value.viewport.x += e.movementX / diagram.value.viewport.scale;
+        diagram.value.viewport.y += e.movementY / diagram.value.viewport.scale;
+      }
     } else if (mousePath.value.mode == 'drag-selected') {
       const [dx, dy] = [
         mouseInView.value.x - mousePath.value.x,
@@ -586,6 +602,7 @@ const onMove = (e: MouseEvent) => {
 };
 const onContextMenu = (e: MouseEvent, itemType: ItemType, id: string) => {
   if (editorStatus.value !== 'idle') return;
+  if (blockContentMenu.value) return;
   e.preventDefault();
   onEscape();
   clearSelectedItems();
