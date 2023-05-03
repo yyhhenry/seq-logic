@@ -200,8 +200,11 @@ const onPaste = () => {
     });
   }
 };
-const onResetTimestamp = () => {
+const onResetTime = () => {
   resetStartTimestamp();
+  if (diagram.value) {
+    diagram.value.resetStatus();
+  }
 };
 const onResetViewport = () => {
   if (diagram.value) {
@@ -715,8 +718,8 @@ const aboutDialog = computed({
                 <ElDropdownItem @click="onResetViewport()">
                   Reset Viewport
                 </ElDropdownItem>
-                <ElDropdownItem @click="onResetTimestamp()">
-                  Reset Timestamp
+                <ElDropdownItem @click="onResetTime()">
+                  Reset Time
                 </ElDropdownItem>
                 <ElDropdownItem @click="onSave()">
                   Force Save (Ctrl+S)

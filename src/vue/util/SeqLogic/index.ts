@@ -358,6 +358,17 @@ export class Diagram {
         this.groupRoot.set(nodeId, result);
         return result;
     }
+    resetStatus() {
+        this.status = new Map(
+            [...this.nodes.entries()].map(([id, { powered }]) => [
+                id,
+                getPowered(powered)
+                    ? { active: true, powered: true }
+                    : { active: false, powered: false },
+            ])
+        );
+        this.parse();
+    }
     /**
      * Parse the diagram and build the data structure.
      */
