@@ -71,9 +71,9 @@ const poweredType = computed(() => getPoweredType(props.node.powered));
       :text-anchor="'middle'"
       :dominant-baseline="'middle'"
       :fill="'var(--color-heading)'"
-      :font-size="'smaller'"
+      :font-size="8"
     >
-      ~
+      -_
     </text>
   </g>
 </template>
