@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Node, Status, getPowered } from '@/util/SeqLogic';
+import { Node, Status, getPowered, getPoweredType } from '@/util/SeqLogic';
 import { computed } from 'vue';
 const props = defineProps<{
   node: Node;
@@ -10,7 +10,7 @@ const radius = 10;
 const probeRadius = 8;
 const padding = 5;
 const powered = computed(() => getPowered(props.node.powered));
-const hasClock = computed(() => typeof props.node.powered !== 'boolean');
+const poweredType = computed(() => getPoweredType(props.node.powered));
 </script>
 <template>
   <g>
@@ -54,7 +54,7 @@ const hasClock = computed(() => typeof props.node.powered !== 'boolean');
       :fill="'none'"
     ></rect>
     <text
-      v-if="hasClock"
+      v-if="poweredType === 'clock'"
       :x="node.x"
       :y="node.y"
       :text-anchor="'middle'"
@@ -63,6 +63,17 @@ const hasClock = computed(() => typeof props.node.powered !== 'boolean');
       :font-size="'smaller'"
     >
       c
+    </text>
+    <text
+      v-if="poweredType === 'power-on'"
+      :x="node.x"
+      :y="node.y"
+      :text-anchor="'middle'"
+      :dominant-baseline="'middle'"
+      :fill="'var(--color-heading)'"
+      :font-size="'smaller'"
+    >
+      ~
     </text>
   </g>
 </template>

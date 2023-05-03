@@ -218,13 +218,13 @@ export class History<T> {
         return true;
     }
 }
-const notNullAssertion = <T>(value: T | undefined | null): T => {
+export const notNullAssertion = <T>(value: T | undefined | null): T => {
     if (value == null) {
         throw new Error('value is null');
     }
     return value;
 };
-const _NNA = notNullAssertion;
+export const _NNA = notNullAssertion;
 export const remarkId = (storage: DiagramStorage) => {
     const nodeIdMapping = new Map(
         [...Object.keys(storage.nodes)].map(
@@ -261,6 +261,24 @@ export const remarkId = (storage: DiagramStorage) => {
         texts,
         viewport: storage.viewport,
     } satisfies DiagramStorage);
+};
+export const maxClockDuration = 10000;
+export const powerOnDuration = 1e12;
+export const validPoweredType = ['general', 'clock', 'power-on'] as const;
+export type ValidPoweredType = (typeof validPoweredType)[number];
+export const isValidPoweredType = (
+    tab: string | number
+): tab is ValidPoweredType =>
+    typeof tab == 'string' &&
+    (validPoweredType as readonly unknown[]).includes(tab);
+export const getPoweredType = (powered: boolean | Clock): ValidPoweredType => {
+    if (typeof powered === 'boolean') {
+        return 'general';
+    } else if (powered.duration < 0) {
+        return 'power-on';
+    } else {
+        return 'clock';
+    }
 };
 export function getPowered(powered: boolean | Clock): boolean {
     if (typeof powered === 'boolean') {
@@ -506,7 +524,7 @@ export class Diagram {
             texts: new Set(Object.keys(storage.texts)),
         };
     }
-    getNodeStatus(nodeId: string, _animeFrame?:number) {
+    getNodeStatus(nodeId: string, _animeFrame?: number) {
         return _NNA(this.status.get(_NNA(this.getGroupRoot(nodeId))));
     }
     /**

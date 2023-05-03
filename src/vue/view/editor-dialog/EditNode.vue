@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { Diagram } from '@/util/SeqLogic';
+import {
+  Diagram,
+  _NNA,
+  getPoweredType,
+  isValidPoweredType,
+  maxClockDuration,
+  powerOnDuration,
+} from '@/util/SeqLogic';
 import {
   ElInputNumber,
   ElRow,
@@ -12,33 +19,29 @@ const props = defineProps<{
   diagram: Diagram;
   id: string;
 }>();
-const node = ref(props.diagram.nodes.get(props.id));
-if (node.value === undefined) {
-  throw new Error(`Node ${props.id} not found`);
-}
+const node = ref(_NNA(props.diagram.nodes.get(props.id)));
 const commit = () => {
-  if (node.value === undefined) {
-    throw new Error(`Node not found`);
-  }
   props.diagram.nodes.set(props.id, node.value);
   props.diagram.commit();
 };
-const validTabNames = ['general', 'clock'] as const;
-const isValidTabName = (tab: string | number): tab is ValidTabName =>
-  typeof tab == 'string' && (validTabNames as readonly unknown[]).includes(tab);
-type ValidTabName = (typeof validTabNames)[number];
 const tab = computed({
-  get: () => (typeof node.value?.powered !== 'boolean' ? 'clock' : 'general'),
-  set: tab => {
-    if (isValidTabName(tab)) {
-      if (!node.value) return;
-      if (tab === 'general') {
+  get: () => getPoweredType(node.value.powered),
+  set: newTab => {
+    console.log(newTab, node.value.powered);
+    if (isValidPoweredType(newTab)) {
+      if (newTab === 'general') {
         node.value.powered = false;
         commit();
-      } else if (tab === 'clock') {
+      } else if (newTab === 'clock') {
         node.value.powered = {
           duration: 1000,
           offset: 0,
+        };
+        commit();
+      } else if (newTab === 'power-on') {
+        node.value.powered = {
+          duration: -powerOnDuration,
+          offset: 1000,
         };
         commit();
       }
@@ -61,14 +64,14 @@ const tab = computed({
         </ElRow>
       </ElTabPane>
       <ElTabPane label="Clock" :name="'clock'">
-        <div v-if="typeof node.powered === 'object'">
+        <div v-if="typeof node.powered === 'object' && tab === 'clock'">
           <ElRow :justify="'space-between'" :align="'middle'">
             <span class="header-text margin-right">Duration (ms)</span>
             <ElInputNumber
               v-model="node.powered.duration"
               :controls-position="'right'"
               :min="200"
-              :max="10000"
+              :max="maxClockDuration"
               :step="100"
               @change="commit()"
             >
@@ -87,6 +90,24 @@ const tab = computed({
             </ElInputNumber>
           </ElRow>
         </div>
+      </ElTabPane>
+      <ElTabPane label="Power-on Reset" :name="'power-on'">
+        <ElRow
+          :justify="'space-between'"
+          :align="'middle'"
+          v-if="typeof node.powered === 'object' && tab === 'power-on'"
+        >
+          <span class="header-text margin-right">Duration (ms)</span>
+          <ElInputNumber
+            v-model="node.powered.offset"
+            :controls-position="'right'"
+            :min="200"
+            :max="maxClockDuration"
+            :step="100"
+            @change="commit()"
+          >
+          </ElInputNumber>
+        </ElRow>
       </ElTabPane>
     </ElTabs>
   </div>

@@ -5,7 +5,11 @@ const nextFrame = () => {
 };
 requestAnimationFrame(nextFrame);
 export const animeFrame = ref(0);
-export const animeFrameTimestamp = computed(()=>{
+const startTimestamp = ref(Date.now());
+export function resetStartTimestamp() {
+    startTimestamp.value = Date.now();
+}
+export const animeFrameTimestamp = computed(() => {
     animeFrame.value;
-    return Date.now();
-})
+    return Date.now() - startTimestamp.value;
+});

@@ -1,28 +1,17 @@
 <script setup lang="ts">
-import { Diagram } from '@/util/SeqLogic';
+import { Diagram, _NNA } from '@/util/SeqLogic';
 import {
-  ElButton,
-  ElCol,
   ElInput,
   ElInputNumber,
   ElRow,
-  ElSwitch,
-  ElTabPane,
-  ElTabs,
 } from 'element-plus';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 const props = defineProps<{
   diagram: Diagram;
   id: string;
 }>();
-const text = ref(props.diagram.texts.get(props.id));
-if (text.value === undefined) {
-  throw new Error(`Text ${props.id} not found`);
-}
+const text = ref(_NNA(props.diagram.texts.get(props.id)));
 const commit = () => {
-  if (text.value === undefined) {
-    throw new Error(`Text not found`);
-  }
   text.value.text = text.value.text.trim();
   props.diagram.texts.set(props.id, text.value);
   props.diagram.commit();

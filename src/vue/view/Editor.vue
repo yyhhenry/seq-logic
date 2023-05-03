@@ -30,11 +30,12 @@ import Node from './diagram-view/Node.vue';
 import { isDiagramStorage } from '@/util/SeqLogic';
 import Wire from './diagram-view/Wire.vue';
 import TextView from './diagram-view/TextView.vue';
-import { animeFrame } from '@/util/animeFrame';
+import { animeFrameTimestamp, resetStartTimestamp } from '@/util/animeFrame';
 import EditNode from '@/view/editor-dialog/EditNode.vue';
 import EditWire from '@/view/editor-dialog/EditWire.vue';
 import EditText from '@/view/editor-dialog/EditText.vue';
 import HelpDialog from './editor-dialog/HelpDialog.vue';
+resetStartTimestamp();
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
@@ -198,6 +199,9 @@ const onPaste = () => {
       }
     });
   }
+};
+const onResetTimestamp = () => {
+  resetStartTimestamp();
 };
 const onSave = () => {
   if (diagram.value) {
@@ -363,7 +367,7 @@ useIntervalFn(() => {
     const now = Date.now();
     for (let i = 0; i < 10; i++) {
       diagram.value.nextTick();
-      if(Date.now() - now > 10) {
+      if (Date.now() - now > 10) {
         break;
       }
     }
@@ -373,7 +377,7 @@ useIntervalFn(() => {
   if (diagram.value?.modified) {
     onSave();
   }
-}, 2000);
+}, 5000);
 const onWheel = (e: WheelEvent) => {
   if (diagram.value) {
     const [x, y] = [mouse.elementX.value, mouse.elementY.value];
@@ -699,6 +703,9 @@ const aboutDialog = computed({
                   Paste (Ctrl+V)
                 </ElDropdownItem>
                 <ElDivider></ElDivider>
+                <ElDropdownItem @click="onResetTimestamp()">
+                  Reset Timestamp
+                </ElDropdownItem>
                 <ElDropdownItem @click="onSave()">
                   Force Save (Ctrl+S)
                 </ElDropdownItem>
@@ -811,13 +818,19 @@ const aboutDialog = computed({
         </ElMain>
         <ElFooter class="editor-footer" height="2rem">
           <ElRow class="full-height" :align="'middle'">
-            <div class="margin-in-line">{{ editorStatus }}</div>
-            <div class="margin-in-line" v-if="diagram !== undefined">
+            <div class="margin-in-line" :title="'Status'">{{ editorStatus }}</div>
+            <div class="margin-in-line" :title="'Viewport'" v-if="diagram !== undefined">
               {{
                 `${diagram.viewport.x.toFixed(2)}:${diagram.viewport.y.toFixed(
                   2
-                )} # ${diagram.viewport.scale.toFixed(2)}x`
+                )} #${diagram.viewport.scale.toFixed(2)}x`
               }}
+            </div>
+            <div class="margin-in-line" :title="'Mouse'">
+              {{ `${mouseInView.x.toFixed(0)}:${mouseInView.y.toFixed(0)}` }}
+            </div>
+            <div class="margin-in-line" :title="'Time'">
+              {{ `${(animeFrameTimestamp/1000).toFixed(1)}s` }}
             </div>
           </ElRow>
         </ElFooter>
@@ -888,6 +901,6 @@ const aboutDialog = computed({
   user-select: none;
 }
 .margin-in-line {
-  margin: 0 10px;
+  margin-right: 10px;
 }
 </style>
