@@ -13,11 +13,11 @@ import {
   ElScrollbar,
   ElSwitch,
 } from 'element-plus';
-import { useDark, useTitle, useToggle } from '@vueuse/core';
+import { useDark, useEventListener, useTitle, useToggle } from '@vueuse/core';
 import { promiseRef } from '@/util/promiseRef';
 import LRMenu from './components/LRMenu.vue';
 import Editor from './Editor.vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { getFiles, FileRecord, deleteFile } from '@/util/database';
 import { getReadableDate, getReadableFilename } from '@/util/readable';
 import {
@@ -97,6 +97,15 @@ const copyPathname = (pathname: string) => {
   clipboard.writeText(pathname);
   ElMessage.success('Path copied to clipboard');
 };
+useEventListener(window, 'contextmenu', e => {
+  e.preventDefault();
+});
+const readableFilenameRefs = computed(() =>
+  files.value.map(file => promiseRef(getReadableFilename(file.pathname)))
+);
+const readableFilenames = computed(() =>
+  readableFilenameRefs.value.map(ref => ref.value)
+);
 </script>
 <template>
   <ElContainer class="root" v-if="pathname === undefined">
@@ -145,7 +154,7 @@ const copyPathname = (pathname: string) => {
               </ElCol>
             </ElRow>
           </ElCol>
-          <ElCol :span="24" :md="16" v-for="file of files">
+          <ElCol :span="24" :md="16" v-for="[id, file] of files.entries()">
             <ElCard class="button-card" @dblclick="onOpen(file.pathname)">
               <ElRow
                 :justify="'space-between'"
@@ -154,7 +163,7 @@ const copyPathname = (pathname: string) => {
               >
                 <div>
                   <h2 class="header-text">
-                    {{ promiseRef(getReadableFilename(file.pathname)).value }}
+                    {{ readableFilenames[id] }}
                   </h2>
                   <p class="long-text" :title="file.pathname">
                     {{ file.pathname }}
