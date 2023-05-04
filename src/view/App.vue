@@ -13,7 +13,7 @@ import {
   ElScrollbar,
   ElSwitch,
 } from 'element-plus';
-import { useDark, useEventListener, useTitle, useToggle } from '@vueuse/core';
+import { useDark, useEventListener, useTitle } from '@vueuse/core';
 import { promiseRef } from '@/util/promiseRef';
 import LRMenu from './components/LRMenu.vue';
 import Editor from './Editor.vue';

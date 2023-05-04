@@ -29,8 +29,6 @@
     },
     "bundle": {
       "active": true,
-      "category": "DeveloperTool",
-      "copyright": "",
       "deb": {
         "depends": []
       },
@@ -43,15 +41,8 @@
         "icons/icon.ico"
       ],
       "identifier": "com.yyhhenry.seq-logic",
-      "longDescription": "",
       "resources": ["samples/*"],
-      "shortDescription": "",
-      "targets": "all",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
-      }
+      "targets": ["msi"]
     },
     "security": {
       "csp": null

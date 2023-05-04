@@ -2,7 +2,11 @@
 
 ## Version 1.1.0 (beta)
 
-迁移到Tauri。
+- 迁移到 Tauri。
+- 更安全的文件存储。
+- 更小的安装包 (3MB).
+- 修复了一些 bug。
+- 放弃了 Win 7 支持。
 
 ## Version 1.0.3 (pre-release)
 
