@@ -7,19 +7,19 @@ import {
   ElHeader,
   ElIcon,
   ElMain,
+  ElMessage,
   ElMessageBox,
   ElRow,
   ElScrollbar,
   ElSwitch,
 } from 'element-plus';
-import remote from '@/remote';
 import { useDark, useTitle, useToggle } from '@vueuse/core';
 import { promiseRef } from '@/util/promiseRef';
 import LRMenu from './components/LRMenu.vue';
 import Editor from './Editor.vue';
 import { ref } from 'vue';
 import { getFiles, FileRecord, deleteFile } from '@/util/database';
-import { readableDate, readableFilename } from '@/util/readable';
+import { getReadableDate, getReadableFilename } from '@/util/readable';
 import {
   DocumentAdd,
   Download,
@@ -28,6 +28,7 @@ import {
   Close,
 } from '@element-plus/icons-vue';
 import { getBlankDiagramStorage } from '@/util/SeqLogic';
+import { dialog, path, fs, clipboard } from '@tauri-apps/api';
 import { websiteName } from '@/util/websiteName';
 import { updateFile } from '@/util/database';
 const title = websiteName;
@@ -50,44 +51,51 @@ const onOpen = async (file: string) => {
   pathname.value = file;
 };
 const onImport = async () => {
-  const { filePaths } = await remote.main['dialog.showOpenDialog']({
+  const filePath = await dialog.open({
     title: 'Import Seq Logic Project',
-    defaultPath: await remote.getExtraPath(),
+    defaultPath: await path.resolveResource('samples'),
     filters: [
       { name: 'Seq Logic', extensions: ['seq.json'] },
       { name: 'JSON', extensions: ['json'] },
     ],
-    properties: ['createDirectory', 'openFile'],
   });
-  if (filePaths.length != 1) {
-    return;
+  if (typeof filePath === 'string') {
+    await onOpen(filePath);
+  } else {
+    ElMessage.error('Failed to open file');
   }
-  await onOpen(filePaths[0]);
 };
 const onNewFile = async () => {
-  const { filePath } = await remote.main['dialog.showSaveDialog']({
+  const filePath = await dialog.save({
     title: 'New Seq Logic Project',
-    defaultPath: await remote.main['app.getPath']('documents'),
+    defaultPath: await path.documentDir(),
     filters: [{ name: 'Seq Logic', extensions: ['seq.json'] }],
-    properties: ['createDirectory'],
   });
-  if (filePath === undefined) {
+  if (filePath == undefined) {
     return;
   }
-  await remote.fs.writeFile(filePath, JSON.stringify(getBlankDiagramStorage()));
+  await fs.writeFile(filePath, JSON.stringify(getBlankDiagramStorage()));
   await onOpen(filePath);
 };
 const onDelete = async (pathname: string) => {
-  ElMessageBox.confirm('Are you sure to remove this project from the list?', 'Warning', {
-    confirmButtonText: 'OK',
-    cancelButtonText: 'Cancel',
-    type: 'warning',
-  })
+  ElMessageBox.confirm(
+    'Are you sure to remove this project from the list?',
+    'Warning',
+    {
+      confirmButtonText: 'OK',
+      cancelButtonText: 'Cancel',
+      type: 'warning',
+    }
+  )
     .then(async () => {
       await deleteFile(pathname);
       await fetchFiles();
     })
     .catch(() => {});
+};
+const copyPathname = (pathname: string) => {
+  clipboard.writeText(pathname);
+  ElMessage.success('Path copied to clipboard');
 };
 </script>
 <template>
@@ -139,16 +147,22 @@ const onDelete = async (pathname: string) => {
           </ElCol>
           <ElCol :span="24" :md="16" v-for="file of files">
             <ElCard class="button-card" @dblclick="onOpen(file.pathname)">
-              <ElRow :justify="'space-between'" :align="'middle'">
+              <ElRow
+                :justify="'space-between'"
+                :align="'middle'"
+                @contextmenu="copyPathname(file.pathname)"
+              >
                 <div>
                   <h2 class="header-text">
-                    {{ readableFilename(file.pathname) }}
+                    {{ promiseRef(getReadableFilename(file.pathname)).value }}
                   </h2>
-                  <p class="long-text">{{ file.pathname }}</p>
+                  <p class="long-text" :title="file.pathname">
+                    {{ file.pathname }}
+                  </p>
                 </div>
                 <ElRow :align="'middle'">
                   <span class="header-text">{{
-                    readableDate(file.updatedTime)
+                    getReadableDate(file.updatedTime)
                   }}</span>
                   <ElButton
                     :text="true"

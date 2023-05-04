@@ -19,8 +19,9 @@ import LRMenu from './components/LRMenu.vue';
 import { deleteFile } from '@/util/database';
 import { Diagram } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
-import { readableFilename } from '@/util/readable';
+import { getReadableFilename } from '@/util/readable';
 import { computed, ref } from 'vue';
+import { clipboard } from '@tauri-apps/api';
 import {
   useEventListener,
   useIntervalFn,
@@ -175,19 +176,22 @@ const onRedo = () => {
     diagram.value.redo();
   }
 };
-const onCopy = () => {
+const onCopy = async () => {
   if (diagram.value) {
     const storage = diagram.value.extract(
       selectedItems.value.nodes,
       selectedItems.value.texts
     );
-    navigator.clipboard.writeText(JSON.stringify(storage));
+    await clipboard.writeText(JSON.stringify(storage));
   }
 };
-const onPaste = () => {
+const onPaste = async () => {
   if (diagram.value) {
-    navigator.clipboard.readText().then(text => {
+    clipboard.readText().then(text => {
       try {
+        if (!text) {
+          throw new Error('Clipboard is empty');
+        }
         const storage = JSON.parse(text);
         if (isDiagramStorage(storage)) {
           selectedItems.value =
@@ -648,6 +652,7 @@ const aboutDialog = computed({
     if (!v) onEscape();
   },
 });
+const readableName = promiseRef(getReadableFilename(props.pathname));
 </script>
 <template>
   <ElContainer class="root">
@@ -658,7 +663,7 @@ const aboutDialog = computed({
           {{ diagram?.modified ? '(Unsaved)' : '' }}
         </div>
         <div class="header-text" style="margin: 10px">
-          {{ readableFilename(pathname) }}
+          {{ readableName }}
         </div>
         <template #end>
           <ElDropdown>

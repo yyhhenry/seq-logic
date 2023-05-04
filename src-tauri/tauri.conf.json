@@ -3,7 +3,7 @@
   "build": {
     "beforeBuildCommand": "pnpm build",
     "beforeDevCommand": "pnpm dev",
-    "devPath": "http://localhost:8080",
+    "devPath": "http://localhost:1420",
     "distDir": "../dist"
   },
   "package": {
@@ -18,6 +18,12 @@
         "scope": ["$RESOURCE/samples/*"]
       },
       "path": {
+        "all": true
+      },
+      "dialog": {
+        "all": true
+      },
+      "clipboard": {
         "all": true
       }
     },

@@ -2,9 +2,9 @@ import { cloneDeep } from 'lodash';
 import { v4 as uuid } from 'uuid';
 import { MaybeObject, isObjectMaybe } from '../types';
 import { isObjectOf } from '../types';
-import remote from '@/remote';
 import { ElMessage } from 'element-plus';
-import { animeFrame, animeFrameTimestamp } from '../animeFrame';
+import { animeFrameTimestamp } from '../animeFrame';
+import { fs } from '@tauri-apps/api';
 interface Coordinate {
     x: number;
     y: number;
@@ -625,7 +625,7 @@ export class Diagram {
         });
     }
     static async loadFile(pathname: string) {
-        const content = await remote.fs.readFile(pathname, 'utf-8');
+        const content = await fs.readTextFile(pathname);
         const diagram = JSON.parse(content);
         if (isDiagramStorage(diagram)) {
             return new Diagram(diagram);
@@ -638,7 +638,7 @@ export class Diagram {
     }
     async saveFile(pathname: string) {
         const storage = this.toStorage();
-        await remote.fs.writeFile(pathname, JSON.stringify(storage));
+        await fs.writeFile(pathname, JSON.stringify(storage));
         this.modified = false;
     }
 }
