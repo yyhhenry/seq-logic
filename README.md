@@ -1,4 +1,8 @@
-# SeqLogic v1.0.2
+# SeqLogic v1.1.0
+
+## Version 1.1.0 (beta)
+
+迁移到Tauri。
 
 ## Version 1.0.3 (pre-release)
 
