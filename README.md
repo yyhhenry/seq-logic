@@ -1,4 +1,13 @@
-# SeqLogic v1.1.0
+# SeqLogic v1.1.1
+
+## Version 1.1.1 (dev)
+
+- 时序逻辑仿真同步更精确。
+- 修复了一些显示体验问题。
+
+% TODO (1.1.1) Before release
+
+- 示例打包
 
 ## Version 1.1.0 (pre-release)
 
