@@ -1,20 +1,55 @@
 <script setup lang="ts">
 import { ElTabs, ElTabPane, ElRow } from 'element-plus';
 import { ref } from 'vue';
-const validTabNames = ['file', 'user-interface', 'add', 'edit'] as const;
-type ValidTabName = typeof validTabNames[number];
-const tab = ref<ValidTabName>('file');
+const tab = ref('file');
 </script>
 <template>
-  <ElTabs v-model="tab">
+  <ElTabs v-model="tab" class="extra-line-height">
     <ElTabPane label="File" :name="'file'"> 
-      <div>
-        
-      </div>
+      <p>
+        Import: To import file from built-in samples folder or any other location on your local machine, click on the import button and select the file you want to import.
+      </p>
+      <p>
+        New: Choose a location on your local machine to save the file.
+      </p>
     </ElTabPane>
-    <ElTabPane label="User Interface" :name="'user-interface'"> </ElTabPane>
-    <ElTabPane label="Add" :name="'add'"> </ElTabPane>
-    <ElTabPane label="Edit" :name="'edit'"> </ElTabPane>
+    <ElTabPane label="Elem" :name="'elem'"> 
+      <p>
+        press A or click "Add node(A)" to clear selected items and to status: add-node
+      </p>
+      <p>
+        press W or click "Add wire(W)" when selected items contains any node to clear non-node selected items and to status: add-wire
+      </p>
+      <p>
+        press T or click "Add text(T)" to clear selected items to status: add-text
+      </p>
+      <p>
+        press Esc or click "Stop" to status: idle
+      </p>
+      <p>
+        press Del or click "Delete" to delete selected items
+      </p>
+      <p>
+        Right Click on any element to open context menu and perform actions. Left drag on selected elements to move them.
+      </p>
+    </ElTabPane>
+    <ElTabPane label="Edit" :name="'edit'"> 
+      <p>
+        Undo & Redo: Undo or redo the last action, you can also use Ctrl+Z or Ctrl+Y to undo or redo.
+      </p>
+      <p>
+        Copy & Paste: Copy or paste the selected items, you can also use Ctrl+C or Ctrl+V to copy or paste.
+      </p>
+      <p>
+        Viewport: Reset the viewport to the default position and default zoom level. Use Wheel to zoom in or out, use right drag or ctrl and left drag to move the viewport.
+      </p>
+      <p>
+        Reset Time: Reset the time of all the clock and power-on reset node. Usually used after paste some elements with power-on reset node.
+      </p>
+      <p>
+        Force Save: Force save the current file to the location you choose. In most cases we do not need to save manually, the file will be saved automatically when you close the editor. But after just change the viewport the auto save will not be triggered, so you can use this button to force save.
+      </p>
+    </ElTabPane>
   </ElTabs>
 </template>
 
@@ -27,5 +62,10 @@ const tab = ref<ValidTabName>('file');
 }
 .margin-right {
   margin-right: 10px;
+}
+.extra-line-height {
+  p {
+    margin: 10px 0;
+  }
 }
 </style>

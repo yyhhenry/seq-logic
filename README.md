@@ -1,4 +1,9 @@
-# SeqLogic v1.1.1
+# SeqLogic v1.1.2
+
+## Version 1.1.2 (release)
+
+- 修复了一些页面选中问题。
+- 添加了内置文档。
 
 ## Version 1.1.1 (pre-release)
 

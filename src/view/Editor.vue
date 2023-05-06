@@ -79,7 +79,7 @@ const diagram = promiseRef(getDiagram());
 // press W or click "Add wire(W)" when selected items contains any node to clear non-node selected items and to status: add-wire
 // press T or click "Add text(T)" to clear selected items to status: add-text
 // (idle or add) }
-// press Esc or click "Cancel" to status: idle
+// press Esc or click "Stop" to status: idle
 // double click a node to status: edit-node
 // double click a wire to status: edit-wire
 // double click a text to status: edit-text
