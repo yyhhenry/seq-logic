@@ -1,12 +1,16 @@
 # SeqLogic v1.1.0
 
-## Version 1.1.0 (beta)
+## Version 1.1.0 (pre-release)
 
 - 迁移到 Tauri。
 - 更安全的文件存储。
 - 更小的安装包 (3MB).
 - 修复了一些 bug。
-- 放弃了 Win 7 支持。
+
+问题：
+
+- 不保证在 Win 7 上正常运行。
+- 需要手动安装内置示例。
 
 ## Version 1.0.3 (pre-release)
 
