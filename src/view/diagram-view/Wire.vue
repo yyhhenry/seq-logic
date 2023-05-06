@@ -9,7 +9,9 @@ const props = defineProps<{
   selected: boolean;
 }>();
 const startPart = computed(() => props.startStatus.active);
-const endPart = computed(() => (props.wire.not ? !startPart.value : startPart.value));
+const endPart = computed(() =>
+  props.wire.not ? !startPart.value : startPart.value
+);
 const mid = computed(() => ({
   x: (props.start.x + props.end.x) / 2,
   y: (props.start.y + props.end.y) / 2,
@@ -37,38 +39,47 @@ const gate = computed(() => {
 </script>
 <template>
   <g>
+    <g v-if="wire.not">
+      <line
+        :x1="start.x"
+        :y1="start.y"
+        :x2="mid.x"
+        :y2="mid.y"
+        :stroke="startPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
+        :stroke-width="width"
+      ></line>
+      <line
+        :x1="mid.x"
+        :y1="mid.y"
+        :x2="end.x"
+        :y2="end.y"
+        :stroke="endPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
+        :stroke-width="width"
+      ></line>
+      <path
+        :d="gate"
+        :stroke="startPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
+        :stroke-width="width / 2"
+        :fill="'var(--color-background)'"
+      ></path>
+      <circle
+        :cx="positions[0].x"
+        :cy="positions[0].y"
+        :r="width / 2"
+        :stroke="endPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
+        :stroke-width="width / 2"
+        :fill="'var(--color-background)'"
+      ></circle>
+    </g>
     <line
+      v-else
       :x1="start.x"
       :y1="start.y"
-      :x2="mid.x"
-      :y2="mid.y"
-      :stroke="startPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
-      :stroke-width="width"
-    ></line>
-    <line
-      :x1="mid.x"
-      :y1="mid.y"
       :x2="end.x"
       :y2="end.y"
-      :stroke="endPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
+      :stroke="startPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
       :stroke-width="width"
     ></line>
-    <path
-      v-if="wire.not"
-      :d="gate"
-      :stroke="startPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
-      :stroke-width="width / 2"
-      :fill="'var(--color-background)'"
-    ></path>
-    <circle
-      v-if="wire.not"
-      :cx="positions[0].x"
-      :cy="positions[0].y"
-      :r="width / 2"
-      :stroke="endPart ? 'var(--el-color-primary)' : 'var(--color-heading)'"
-      :stroke-width="width / 2"
-      :fill="'var(--color-background)'"
-    ></circle>
     <line
       v-if="selected"
       :x1="start.x"

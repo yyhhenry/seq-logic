@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash';
+import { cloneDeep, random } from 'lodash';
 import { v4 as uuid } from 'uuid';
 import { MaybeObject, isObjectMaybe } from '../types';
 import { isObjectOf } from '../types';
@@ -472,8 +472,7 @@ export class Diagram {
             }
         } else {
             if (status.nextTick === undefined) {
-                const offset = Math.floor(Math.random() * 2) + 3;
-                status.nextTick = this.current + offset;
+                status.nextTick = (this.current | 1) + random() + 1;
                 if (!this.toggle.has(status.nextTick)) {
                     this.toggle.set(status.nextTick, new Set());
                 }
