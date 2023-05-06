@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ElTabs, ElTabPane, ElRow } from 'element-plus';
+import { ElTabs, ElTabPane } from 'element-plus';
 import { ref } from 'vue';
 const tab = ref('file');
+window.getSelection()?.empty();
 </script>
 <template>
-  <ElTabs v-model="tab" class="extra-line-height">
-    <ElTabPane label="File" :name="'file'"> 
+  <ElTabs v-model="tab">
+    <ElTabPane label="File" :name="'file'" class="help-dialog"> 
       <p>
         Import: To import file from built-in samples folder or any other location on your local machine, click on the import button and select the file you want to import.
       </p>
@@ -13,7 +14,7 @@ const tab = ref('file');
         New: Choose a location on your local machine to save the file.
       </p>
     </ElTabPane>
-    <ElTabPane label="Elem" :name="'elem'"> 
+    <ElTabPane label="Elem" :name="'elem'" class="help-dialog"> 
       <p>
         press A or click "Add node(A)" to clear selected items and to status: add-node
       </p>
@@ -33,7 +34,7 @@ const tab = ref('file');
         Right Click on any element to open context menu and perform actions. Left drag on selected elements to move them.
       </p>
     </ElTabPane>
-    <ElTabPane label="Edit" :name="'edit'"> 
+    <ElTabPane label="Edit" :name="'edit'" class="help-dialog"> 
       <p>
         Undo & Redo: Undo or redo the last action, you can also use Ctrl+Z or Ctrl+Y to undo or redo.
       </p>
@@ -63,7 +64,8 @@ const tab = ref('file');
 .margin-right {
   margin-right: 10px;
 }
-.extra-line-height {
+.help-dialog {
+  user-select: text;
   p {
     margin: 10px 0;
   }

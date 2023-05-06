@@ -905,7 +905,7 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
     ></EditText>
   </ElDialog>
   <ElDialog v-model="helpDialog" :title="'Help'">
-    <HelpDialog></HelpDialog>
+    <HelpDialog v-if="helpDialog"></HelpDialog>
   </ElDialog>
   <ElDialog v-model="aboutDialog" :title="'About'">
     <div>Seq Logic</div>
