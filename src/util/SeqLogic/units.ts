@@ -13,7 +13,7 @@ export async function getUnits() {
     );
 }
 export function getPopularUnits() {
-    return ['and', 'or', 'nand', 'd-latch', 'd-trigger'];
+    return ['and', 'or', 'nand', 'xor', 'd-latch', 'd-trigger'];
 }
 export async function getUnit(name: string) {
     const folder = await getUnitsFolder();
