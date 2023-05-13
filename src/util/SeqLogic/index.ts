@@ -5,6 +5,7 @@ import { isObjectOf } from '../types';
 import { ElMessage } from 'element-plus';
 import { animeFrameTimestamp } from '../animeFrame';
 import { fs } from '@tauri-apps/api';
+import { getDefaultSettings } from 'http2';
 interface Coordinate {
     x: number;
     y: number;
@@ -90,31 +91,29 @@ export interface Status {
     active: boolean;
     nextTick?: number;
 }
-export interface BaseModification<T> {
+interface BaseModification<T> {
     deleted?: T;
     inserted?: T;
 }
+type Operation<T> = Map<string, BaseModification<T>>;
+
 /**
- * 自动保存历史记录
- * 默认指针在最后一条记录，初始在0
- * 每次进行一次独立修改时commit()
+ * History of a map.
+ * Remember to call `commit()` after every independent operation.
  */
 export class History<T> {
     private items: Map<string, T>;
-    private history: Map<string, BaseModification<T>>[];
+    private operations: Operation<T>[];
     /**
-     * 指向当前记录
-     * modifying: 指向正在修改的记录
-     * committed: 指向可进行redo的第一条记录
+     * Pointer to the first record to redo.
      */
-    private current: number;
-    private status: 'modifying' | 'committed';
+    private head: number;
+    private cache: Operation<T>;
     constructor(items: Map<string, T>) {
         this.items = items;
-        this.history = [];
-        this.current = -1;
-        this.commit();
-        this.status = 'committed';
+        this.operations = [];
+        this.head = 0;
+        this.cache = new Map();
     }
     has(id: string) {
         return this.items.has(id);
@@ -135,40 +134,27 @@ export class History<T> {
     keys() {
         return this.items.keys();
     }
-    /**
-     * Start modifying.
-     */
-    private beforeModify() {
-        if (this.status === 'committed') {
-            while (this.history.length - 1 > this.current) {
-                this.history.pop();
-            }
-            this.history[this.current] = new Map<string, BaseModification<T>>();
-            this.status = 'modifying';
-        }
-    }
     delete(id: string) {
-        this.beforeModify();
-        const cur = this.history[this.current];
         const origin = this.items.get(id);
-        const item = cur.get(id);
+        if (origin == undefined) {
+            return;
+        }
+        const item = this.cache.get(id);
         if (item) {
             item.inserted = undefined;
         } else {
-            cur.set(id, { deleted: origin });
+            this.cache.set(id, { deleted: origin });
         }
         this.items.delete(id);
     }
     set(id: string, value: T) {
-        this.beforeModify();
-        const cur = this.history[this.current];
         const origin = this.items.get(id);
-        const item = cur.get(id);
+        const item = this.cache.get(id);
         const inserted = cloneDeep(value);
         if (item) {
             item.inserted = inserted;
         } else {
-            cur.set(id, { inserted, deleted: origin });
+            this.cache.set(id, { inserted, deleted: origin });
         }
         this.items.set(id, inserted);
     }
@@ -176,20 +162,38 @@ export class History<T> {
      * End modifying.
      */
     commit() {
-        this.beforeModify();
-        this.history.push(new Map<string, BaseModification<T>>());
-        this.current++;
-        this.status = 'committed';
+        while (this.operations.length > this.head) {
+            this.operations.pop();
+        }
+        this.operations.push(this.cache);
+        this.cache = new Map();
+        this.head++;
+    }
+    /**
+     * Clear all uncommitted operations.
+     */
+    clearUncommitted() {
+        for (const [id, value] of this.cache.entries()) {
+            if (value.deleted) {
+                this.items.set(id, value.deleted);
+            } else {
+                this.items.delete(id);
+            }
+        }
+        this.cache = new Map();
+    }
+    hasUncommitted() {
+        return this.cache.size != 0;
     }
     undo() {
-        if (this.status === 'modifying') {
+        if (this.cache.size != 0) {
             throw new Error('Cannot undo while modifying.');
         }
-        if (this.current <= 0) {
+        if (this.head <= 0) {
             return false;
         }
-        this.current--;
-        const cur = this.history[this.current];
+        this.head--;
+        const cur = this.operations[this.head];
         for (const [id, value] of cur.entries()) {
             if (value.deleted) {
                 this.items.set(id, value.deleted);
@@ -200,13 +204,13 @@ export class History<T> {
         return true;
     }
     redo() {
-        if (this.status === 'modifying') {
+        if (this.cache.size != 0) {
             throw new Error('Cannot redo while modifying.');
         }
-        if (this.current >= this.history.length - 1) {
+        if (this.head >= this.operations.length) {
             return false;
         }
-        const cur = this.history[this.current];
+        const cur = this.operations[this.head];
         for (const [id, value] of cur.entries()) {
             if (value.inserted) {
                 this.items.set(id, value.inserted);
@@ -214,7 +218,7 @@ export class History<T> {
                 this.items.delete(id);
             }
         }
-        this.current++;
+        this.head++;
         return true;
     }
 }
@@ -289,6 +293,37 @@ export function getPowered(powered: boolean | Clock): boolean {
         return idx % 2 === 0;
     }
 }
+export function isWiresValid(storage: DiagramStorage) {
+    // check if all wires are valid
+    // (start, end) should be unique, start != end, start and end should be valid node id
+    const wires = Object.values(storage.wires);
+    const nodeIds = Object.keys(storage.nodes);
+    if (wires.some(wire => wire.start === wire.end)) {
+        return false;
+    }
+    if (wires.some(wire => !nodeIds.includes(wire.start))) {
+        return false;
+    }
+    if (wires.some(wire => !nodeIds.includes(wire.end))) {
+        return false;
+    }
+    const wireSet = new Set(
+        wires.map(wire => JSON.stringify([wire.start, wire.end]))
+    );
+    if (wireSet.size !== wires.length) {
+        return false;
+    }
+    return true;
+}
+export async function loadDiagramStorageFile(pathname: string) {
+    const content = await fs.readTextFile(pathname);
+    const diagram = JSON.parse(content);
+    if (isDiagramStorage(diagram)) {
+        return diagram;
+    } else {
+        throw new Error('Invalid file');
+    }
+}
 /**
  * A diagram.
  *
@@ -318,6 +353,10 @@ export class Diagram {
      */
     constructor(storage: DiagramStorage) {
         storage = cloneDeep(storage);
+        if (!isWiresValid(storage)) {
+            ElMessage.error('Invalid wires');
+            storage = getBlankDiagramStorage();
+        }
         function recordToMap<T>(record: Record<string, T>) {
             return new History(new Map(Object.entries(record)));
         }
@@ -505,11 +544,15 @@ export class Diagram {
         }) satisfies DiagramStorage as DiagramStorage;
     }
     merge(storage: DiagramStorage) {
+        storage = remarkId(storage);
+        if (!isWiresValid(storage)) {
+            ElMessage.error('Invalid wires');
+            return;
+        }
         const [dx, dy] = [
             this.viewport.x - storage.viewport.x - (Math.random() * 10 + 10),
             this.viewport.y - storage.viewport.y - (Math.random() * 10 + 10),
         ];
-        storage = remarkId(storage);
         [...Object.values(storage.nodes)].forEach(node => {
             node.x -= dx;
             node.y -= dy;
@@ -537,14 +580,31 @@ export class Diagram {
     getNodeStatus(nodeId: string, _animeFrame?: number) {
         return _NNA(this.status.get(_NNA(this.getGroupRoot(nodeId))));
     }
+    hasUncommitted() {
+        return (
+            this.nodes.hasUncommitted() ||
+            this.wires.hasUncommitted() ||
+            this.texts.hasUncommitted()
+        );
+    }
     /**
      * Save the history to handle undo and redo.
      */
     commit() {
+        if (!this.hasUncommitted()) {
+            ElMessage.error('No changes to commit');
+            return;
+        }
         this.modified = true;
         this.nodes.commit();
         this.wires.commit();
         this.texts.commit();
+        this.parse();
+    }
+    clearUncommitted() {
+        this.nodes.clearUncommitted();
+        this.wires.clearUncommitted();
+        this.texts.clearUncommitted();
         this.parse();
     }
     undo() {
@@ -624,13 +684,7 @@ export class Diagram {
         });
     }
     static async loadFile(pathname: string) {
-        const content = await fs.readTextFile(pathname);
-        const diagram = JSON.parse(content);
-        if (isDiagramStorage(diagram)) {
-            return new Diagram(diagram);
-        } else {
-            throw new Error('Invalid file');
-        }
+        return new Diagram(await loadDiagramStorageFile(pathname));
     }
     fetchClock() {
         this.parse();
@@ -641,7 +695,6 @@ export class Diagram {
         this.modified = false;
     }
 }
-
 export const getBlankDiagramStorage = (): DiagramStorage => {
     return {
         nodes: {},

@@ -36,6 +36,7 @@ import EditNode from '@/view/editor-dialog/EditNode.vue';
 import EditWire from '@/view/editor-dialog/EditWire.vue';
 import EditText from '@/view/editor-dialog/EditText.vue';
 import HelpDialog from './editor-dialog/HelpDialog.vue';
+import { add } from 'lodash';
 resetStartTimestamp();
 const props = defineProps<{
   /**
@@ -149,13 +150,17 @@ const clearSelectedItems = () => {
     texts: new Set(),
   };
 };
-const hasSelectedItems = computed(() => {
+const selectedItemCount = computed(() => {
   return (
-    selectedItems.value.nodes.size > 0 ||
-    selectedItems.value.wires.size > 0 ||
-    selectedItems.value.texts.size > 0
+    selectedItems.value.nodes.size +
+    selectedItems.value.wires.size +
+    selectedItems.value.texts.size
   );
 });
+const hasSelectedItems = computed(() => {
+  return selectedItemCount.value > 0;
+});
+
 const svgRef = ref<SVGSVGElement>();
 const mouse = useMouseInElement(svgRef);
 const mouseInView = computed(() => {
@@ -227,7 +232,7 @@ const onSave = () => {
 const onEscape = () => {
   if (editorStatus.value !== 'idle') {
     if (editorStatus.value.startsWith('add-')) {
-      diagram.value?.undo();
+      diagram.value?.clearUncommitted();
     }
     editorStatus.value = 'idle';
   }
@@ -236,16 +241,18 @@ const addNodeProc = () => {
   if (!diagram.value) {
     throw new Error('diagram is undefined');
   }
-  return diagram.value?.addNode({
+  const node = {
     x: mouseInView.value.x,
     y: mouseInView.value.y,
     powered: false,
-  });
+  };
+  return diagram.value?.addNode(node);
 };
 const getNodeAtMouse = () => {
   if (!diagram.value) {
     throw new Error('diagram is undefined');
   }
+  // return the last node that is close to the mouse
   let result = undefined as string | undefined;
   for (const [id, node] of diagram.value.nodes.entries()) {
     const [dx, dy] = [
@@ -288,7 +295,6 @@ const onAddNode = () => {
   editorStatus.value = 'add-node';
   clearSelectedItems();
   addNodeProc();
-  diagram.value?.commit();
 };
 const onAddWire = () => {
   onEscape();
@@ -300,14 +306,12 @@ const onAddWire = () => {
   selectedItems.value.wires = new Set();
   selectedItems.value.texts = new Set();
   addWireProc();
-  diagram.value?.commit();
 };
 const onAddText = () => {
   onEscape();
   editorStatus.value = 'add-text';
   clearSelectedItems();
   addTextProc();
-  diagram.value?.commit();
 };
 const onDelete = () => {
   if (editorStatus.value !== 'idle') {
@@ -510,6 +514,10 @@ const onMouseUp = (_e: MouseEvent) => {
           }
         }
       }
+    } else if (mousePath.value.mode === 'drag-selected') {
+      if (mousePath.value.activated) {
+        diagram.value.commit();
+      }
     }
     mousePath.value = undefined;
   } else if (editorStatus.value === 'add-node') {
@@ -520,9 +528,8 @@ const onMouseUp = (_e: MouseEvent) => {
     diagram.value.commit();
   } else if (editorStatus.value === 'add-wire') {
     if (!diagram.value) return;
-    diagram.value.undo();
+    diagram.value.clearUncommitted();
     const newFocus = addWireProc();
-    diagram.value.commit();
     diagram.value.commit();
     clearSelectedItems();
     selectedItems.value.nodes.add(newFocus);
@@ -557,10 +564,9 @@ const onMove = (e: MouseEvent) => {
         Math.sqrt(dx * dx + dy * dy) * diagram.value.viewport.scale > 5
       ) {
         mousePath.value.activated = true;
-        diagram.value.commit();
       }
       if (mousePath.value.activated) {
-        diagram.value.undo();
+        diagram.value.clearUncommitted();
         for (const id of selectedItems.value.wires) {
           const wire = diagram.value?.wires.get(id);
           if (wire) {
@@ -584,24 +590,20 @@ const onMove = (e: MouseEvent) => {
             diagram.value.texts.set(id, text);
           }
         }
-        diagram.value.commit();
       }
     }
   } else if (editorStatus.value === 'add-node') {
     if (!diagram.value) return;
-    diagram.value.undo();
+    diagram.value.clearUncommitted();
     addNodeProc();
-    diagram.value.commit();
   } else if (editorStatus.value === 'add-text') {
     if (!diagram.value) return;
-    diagram.value.undo();
+    diagram.value.clearUncommitted();
     addTextProc();
-    diagram.value.commit();
   } else if (editorStatus.value === 'add-wire') {
     if (!diagram.value) return;
-    diagram.value.undo();
+    diagram.value.clearUncommitted();
     addWireProc();
-    diagram.value.commit();
   }
 };
 const onContextMenu = (e: MouseEvent, itemType: ItemType, id: string) => {
@@ -854,7 +856,7 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
           </svg>
         </ElMain>
         <ElFooter class="editor-footer" height="2rem">
-          <ElRow class="full-height" :align="'middle'">
+          <LRMenu class="full-height">
             <div class="margin-in-line" :title="'Status'">
               {{ editorStatus }}
             </div>
@@ -872,10 +874,15 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
             <div class="margin-in-line" :title="'Mouse'">
               {{ `${mouseInView.x.toFixed(0)}:${mouseInView.y.toFixed(0)}` }}
             </div>
-            <div class="margin-in-line" :title="'Time'">
-              {{ `${(animeFrameTimestamp / 1000).toFixed(1)}s` }}
-            </div>
-          </ElRow>
+            <template #end>
+              <div class="margin-in-line" :title="'Selected'">
+                {{ `${selectedItemCount} selected` }}
+              </div>
+              <div class="margin-in-line" :title="'Time'">
+                {{ `${(animeFrameTimestamp / 1000).toFixed(1)}s` }}
+              </div>
+            </template>
+          </LRMenu>
         </ElFooter>
       </ElContainer>
     </ElMain>
