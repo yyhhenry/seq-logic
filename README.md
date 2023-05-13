@@ -1,5 +1,14 @@
 # SeqLogic v1.1.2
 
+## Version 1.1.3 (release)
+
+- Undo&Redo 不受限制。
+- 底部状态栏优化
+
+Unresolved:
+
+- 常用单元一键导入
+
 ## Version 1.1.2 (release)
 
 - 修复了一些页面选中问题。
