@@ -1,6 +1,12 @@
-# SeqLogic v1.1.3
+# SeqLogic v1.1.4
 
-## Version 1.1.3 (release)
+## Version 1.1.4 (bugfix)
+
+- 修复 1.1.3 的性能和稳定性问题
+
+## Version 1.1.3 (deprecated)
+
+### 出现重大性能和稳定性问题
 
 - Undo&Redo 不受限制。
 - 底部状态栏优化

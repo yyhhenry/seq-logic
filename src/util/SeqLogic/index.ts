@@ -341,7 +341,7 @@ export class Diagram {
     private status: Map<string, Status>;
     private toggle: Map<number, Set<string>>;
     private current: number;
-    private wireWithNode: Map<string, Set<string>>;
+    private wirePairSet: Set<string>;
     private groupRoot: Map<string, string>;
     private updatePrec: Map<string, Set<string>>;
     private updateSucc: Map<string, Set<string>>;
@@ -374,11 +374,11 @@ export class Diagram {
         this.toggle = new Map();
         this.current = 0;
         this.viewport = storage.viewport;
-        this.wireWithNode = new Map();
         this.groupRoot = new Map();
         this.updatePrec = new Map();
         this.updateSucc = new Map();
         this.modified = false;
+        this.wirePairSet = new Set();
         this.parse();
     }
     private activateAll() {
@@ -406,18 +406,16 @@ export class Diagram {
                     : { active: false, powered: false },
             ])
         );
-        this.parse();
+        this.activateAll();
     }
     /**
      * Parse the diagram and build the data structure.
      */
-    private parse() {
-        this.wireWithNode = new Map(
-            [...this.nodes.entries()].map(([id]) => [id, new Set()])
-        );
-        for (const [id, wire] of this.wires.entries()) {
-            _NNA(this.wireWithNode.get(wire.start)).add(id);
-            _NNA(this.wireWithNode.get(wire.end)).add(id);
+    parse() {
+        this.wirePairSet = new Set();
+        for (const [_id, wire] of this.wires.entries()) {
+            this.wirePairSet.add(JSON.stringify([wire.start, wire.end]));
+            this.wirePairSet.add(JSON.stringify([wire.end, wire.start]));
         }
         for (const id of this.nodes.keys()) {
             if (this.status.get(id) == null) {
@@ -601,11 +599,13 @@ export class Diagram {
         this.texts.commit();
         this.parse();
     }
+    /**
+     * Clear all uncommitted changes, you should call `parse()` by your self.
+     */
     clearUncommitted() {
         this.nodes.clearUncommitted();
         this.wires.clearUncommitted();
         this.texts.clearUncommitted();
-        this.parse();
     }
     undo() {
         const valid =
@@ -637,13 +637,12 @@ export class Diagram {
         if (wire.start === wire.end) {
             return;
         }
-        for (const wireId of this.wireWithNode.get(wire.start) ?? []) {
-            const w = _NNA(this.wires.get(wireId));
-            if (w.start === wire.end || w.end === wire.end) {
-                return;
-            }
+        if (this.wirePairSet.has(JSON.stringify([wire.start, wire.end]))) {
+            return;
         }
         this.wires.set(id, wire);
+        this.wirePairSet.add(JSON.stringify([wire.start, wire.end]));
+        this.wirePairSet.add(JSON.stringify([wire.end, wire.start]));
         return id;
     }
     addText(text: Text) {
@@ -651,18 +650,28 @@ export class Diagram {
         this.texts.set(id, text);
         return id;
     }
+    /**
+     * Remember to call clearInvalidWires() after this.
+     */
     removeNode(id: string) {
         if (this.nodes.has(id)) {
             this.nodes.delete(id);
-            for (const wireId of _NNA(this.wireWithNode.get(id))) {
-                this.wires.delete(wireId);
-            }
         } else {
             throw new Error('node not found');
         }
     }
+    removeInvalidWires() {
+        for (const [id, wire] of this.wires.entries()) {
+            if (!this.nodes.has(wire.start) || !this.nodes.has(wire.end)) {
+                this.removeWire(id);
+            }
+        }
+    }
     removeWire(id: string) {
         if (this.wires.has(id)) {
+            const wire = _NNA(this.wires.get(id));
+            this.wirePairSet.delete(JSON.stringify([wire.start, wire.end]));
+            this.wirePairSet.delete(JSON.stringify([wire.end, wire.start]));
             this.wires.delete(id);
         } else {
             throw new Error('wire not found');

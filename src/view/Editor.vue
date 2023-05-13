@@ -236,15 +236,26 @@ const onSave = () => {
     diagram.value.saveFile(props.pathname);
   }
 };
+
+const addingNode = ref<string>();
+const wireEnd = ref<string>();
+
 const onEscape = () => {
   if (editorStatus.value !== 'idle') {
     if (editorStatus.value.startsWith('add-')) {
       diagram.value?.clearUncommitted();
+      diagram.value?.parse();
+      if (editorStatus.value === 'add-node') {
+        addingNode.value = undefined;
+      } else if (editorStatus.value === 'add-wire') {
+        addingNode.value = undefined;
+        wireEnd.value = undefined;
+      }
     }
     editorStatus.value = 'idle';
   }
 };
-const addNodeProc = () => {
+const addNodeProc = (commit = false) => {
   if (!diagram.value) {
     throw new Error('diagram is undefined');
   }
@@ -253,49 +264,97 @@ const addNodeProc = () => {
     y: mouseInView.value.y,
     powered: false,
   };
-  return diagram.value?.addNode(node);
+  if (addingNode.value === undefined) {
+    const id = diagram.value.addNode(node);
+    diagram.value.parse();
+    addingNode.value = id;
+  } else {
+    diagram.value.nodes.set(addingNode.value, node);
+  }
+  if (commit) {
+    const id = addingNode.value;
+    addingNode.value = undefined;
+    diagram.value.commit();
+    return id;
+  }
+  return addingNode.value;
 };
 const getNodeAtMouse = () => {
   if (!diagram.value) {
     throw new Error('diagram is undefined');
   }
   // return the last node that is close to the mouse
+  // should not be the node being added
   let result = undefined as string | undefined;
   for (const [id, node] of diagram.value.nodes.entries()) {
     const [dx, dy] = [
       node.x - mouseInView.value.x,
       node.y - mouseInView.value.y,
     ];
+    if (id == addingNode.value) {
+      continue;
+    }
     if (dx * dx + dy * dy < 100) {
       result = id;
     }
   }
   return result;
 };
-const addWireProc = () => {
+const addWireProc = (commit = false) => {
   if (!diagram.value) {
     throw new Error('diagram is undefined');
   }
-  const end = getNodeAtMouse() ?? addNodeProc();
-  for (const id of selectedItems.value.nodes) {
-    diagram.value.addWire({
-      start: id,
-      end,
-      not: false,
-    });
+  const nodeAtMouse = getNodeAtMouse();
+  const end = nodeAtMouse ?? addingNode.value;
+  const node = {
+    x: mouseInView.value.x,
+    y: mouseInView.value.y,
+    powered: false,
+  };
+  if (wireEnd.value == undefined || end == undefined || end != wireEnd.value) {
+    diagram.value.clearUncommitted();
+    addingNode.value = undefined;
+    wireEnd.value = undefined;
+    if (nodeAtMouse == undefined) {
+      addingNode.value = diagram.value.addNode(node);
+      wireEnd.value = addingNode.value;
+    } else {
+      wireEnd.value = nodeAtMouse;
+    }
+    for (const id of selectedItems.value.nodes) {
+      diagram.value.addWire({
+        start: id,
+        end: wireEnd.value,
+        not: false,
+      });
+    }
+    diagram.value.parse();
+  } else if (addingNode.value != undefined) {
+    diagram.value.nodes.set(addingNode.value, node);
   }
-  return end;
+  const result = wireEnd.value;
+  if (commit) {
+    diagram.value.commit();
+    addingNode.value = undefined;
+    wireEnd.value = undefined;
+  }
+  return result;
 };
-const addTextProc = () => {
+const addTextProc = (commit = false) => {
   if (!diagram.value) {
     throw new Error('diagram is undefined');
   }
-  return diagram.value?.addText({
+  diagram.value.clearUncommitted();
+  const id = diagram.value?.addText({
     x: mouseInView.value.x,
     y: mouseInView.value.y,
     text: 'New Text',
     scale: 1,
   });
+  if (commit) {
+    diagram.value.commit();
+  }
+  return id;
 };
 const onAddNode = () => {
   onEscape();
@@ -334,6 +393,7 @@ const onDelete = () => {
   selectedItems.value.texts.forEach(id => {
     diagram.value?.removeText(id);
   });
+  diagram.value?.removeInvalidWires();
   diagram.value?.commit();
   clearSelectedItems();
 };
@@ -529,15 +589,13 @@ const onMouseUp = (_e: MouseEvent) => {
     mousePath.value = undefined;
   } else if (editorStatus.value === 'add-node') {
     if (!diagram.value) return;
-    diagram.value.commit();
+    addNodeProc(true);
   } else if (editorStatus.value === 'add-text') {
     if (!diagram.value) return;
-    diagram.value.commit();
+    addTextProc(true);
   } else if (editorStatus.value === 'add-wire') {
     if (!diagram.value) return;
-    diagram.value.clearUncommitted();
-    const newFocus = addWireProc();
-    diagram.value.commit();
+    const newFocus = addWireProc(true);
     clearSelectedItems();
     selectedItems.value.nodes.add(newFocus);
   }
@@ -601,15 +659,12 @@ const onMove = (e: MouseEvent) => {
     }
   } else if (editorStatus.value === 'add-node') {
     if (!diagram.value) return;
-    diagram.value.clearUncommitted();
     addNodeProc();
   } else if (editorStatus.value === 'add-text') {
     if (!diagram.value) return;
-    diagram.value.clearUncommitted();
     addTextProc();
   } else if (editorStatus.value === 'add-wire') {
     if (!diagram.value) return;
-    diagram.value.clearUncommitted();
     addWireProc();
   }
 };
