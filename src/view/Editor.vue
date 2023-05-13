@@ -22,6 +22,7 @@ import { promiseRef } from '@/util/promiseRef';
 import { getReadableFilename } from '@/util/readable';
 import { computed, ref } from 'vue';
 import { clipboard } from '@tauri-apps/api';
+import { getPopularUnits, getUnit } from '@/util/SeqLogic/units';
 import {
   useEventListener,
   useIntervalFn,
@@ -37,6 +38,7 @@ import EditWire from '@/view/editor-dialog/EditWire.vue';
 import EditText from '@/view/editor-dialog/EditText.vue';
 import HelpDialog from './editor-dialog/HelpDialog.vue';
 import { add } from 'lodash';
+import UnitsDialog from './editor-dialog/UnitsDialog.vue';
 resetStartTimestamp();
 const props = defineProps<{
   /**
@@ -123,7 +125,8 @@ type EditorStatus =
   | 'edit-wire'
   | 'edit-text'
   | 'docs-help'
-  | 'docs-about';
+  | 'docs-about'
+  | 'docs-units';
 const editorStatus = ref<EditorStatus>('idle');
 type ItemType = 'node' | 'wire' | 'text';
 const itemsTypeMap = {
@@ -189,6 +192,10 @@ const onCopy = async () => {
     );
     await clipboard.writeText(JSON.stringify(storage));
   }
+};
+const onAddUnit = async (name: string) => {
+  const unit = await getUnit(name);
+  selectedItems.value = diagram.value?.merge(unit) ?? selectedItems.value;
 };
 const onPaste = async () => {
   if (diagram.value) {
@@ -654,6 +661,16 @@ const aboutDialog = computed({
     if (!v) onEscape();
   },
 });
+const unitsDialog = computed({
+  get: () => editorStatus.value === 'docs-units',
+  set: v => {
+    if (!v) onEscape();
+  },
+});
+const onShowUnits = () => {
+  onEscape();
+  editorStatus.value = 'docs-units';
+};
 const readableName = promiseRef(getReadableFilename(props.pathname));
 </script>
 <template>
@@ -668,6 +685,26 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
           {{ readableName }}
         </div>
         <template #end>
+          <ElDropdown>
+            <ElLink>
+              <span style="margin: 15px" class="header-text"> Unit </span>
+            </ElLink>
+            <template #dropdown>
+              <div class="header-text">
+                <ElDropdownItem
+                  v-for="name of getPopularUnits()"
+                  @click="onAddUnit(name)"
+                >
+                  {{ name }}
+                </ElDropdownItem>
+                <ElDivider></ElDivider>
+                <ElDropdownItem @click="onShowUnits()">
+                  Show More
+                </ElDropdownItem>
+              </div>
+            </template>
+          </ElDropdown>
+
           <ElDropdown>
             <ElLink>
               <span style="margin: 15px" class="header-text"> Elem </span>
@@ -917,7 +954,18 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
   <ElDialog v-model="aboutDialog" :title="'About'">
     <div>Seq Logic</div>
     <div>Author: 严一涵等3人</div>
-    <div>Version: 数据结构大作业特别版</div>
+    <div>Version: v1.1.3</div>
+  </ElDialog>
+  <ElDialog v-model="unitsDialog" :title="'Units'">
+    <UnitsDialog
+      v-if="unitsDialog"
+      @add="
+        name => {
+          unitsDialog = false;
+          onAddUnit(name);
+        }
+      "
+    ></UnitsDialog>
   </ElDialog>
 </template>
 <style lang="scss" scoped>

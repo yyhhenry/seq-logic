@@ -14,6 +14,11 @@ window.getSelection()?.empty();
         New: Choose a location on your local machine to save the file.
       </p>
     </ElTabPane>
+    <ElTabPane label="Unit" :name="'unit'" class="help-dialog"> 
+      <p>
+        To import and paste at the same time with those popular components.
+      </p>
+    </ElTabPane>
     <ElTabPane label="Elem" :name="'elem'" class="help-dialog"> 
       <p>
         press A or click "Add node(A)" to clear selected items and to status: add-node

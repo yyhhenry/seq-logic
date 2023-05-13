@@ -18,7 +18,7 @@ import { promiseRef } from '@/util/promiseRef';
 import LRMenu from './components/LRMenu.vue';
 import Editor from './Editor.vue';
 import { computed, ref } from 'vue';
-import { getFiles, FileRecord, deleteFile } from '@/util/database';
+import { getFiles, deleteFile } from '@/util/database';
 import { getReadableDate, getReadableFilename } from '@/util/readable';
 import {
   DocumentAdd,
