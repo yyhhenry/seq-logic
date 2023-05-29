@@ -20,7 +20,7 @@ import { Diagram } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
 import { getReadableFilename } from '@/util/readable';
 import { computed, ref } from 'vue';
-import { clipboard, os } from '@tauri-apps/api';
+import { clipboard, app } from '@tauri-apps/api';
 import { getPopularUnits, getUnit } from '@/util/SeqLogic/units';
 import { computedAsync, useEventListener, useIntervalFn, useMouseInElement } from '@vueuse/core';
 import Node from './diagram-view/Node.vue';
@@ -34,7 +34,11 @@ import EditText from '@/view/editor-dialog/EditText.vue';
 import HelpDialog from './editor-dialog/HelpDialog.vue';
 import UnitsDialog from './editor-dialog/UnitsDialog.vue';
 resetStartTimestamp();
-const version = computedAsync(async () => await os.version(), '<unknown>');
+const version = computedAsync(async () => {
+  const version = await app.getVersion();
+  console.log(version);
+  return version;
+}, '<unknown>');
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
