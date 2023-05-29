@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { Diagram, _NNA } from '@/util/SeqLogic';
-import {
-  ElInput,
-  ElInputNumber,
-  ElRow,
-} from 'element-plus';
+import { ElInput, ElInputNumber, ElRow } from 'element-plus';
 import { ref } from 'vue';
 const props = defineProps<{
   diagram: Diagram;
@@ -22,13 +18,7 @@ const commit = () => {
     <ElInput v-model="text.text" @change="commit()"> </ElInput>
     <ElRow :justify="'space-between'" :align="'middle'" style="margin: 10px">
       <div class="header-text">Scale (x16pt)</div>
-      <ElInputNumber
-        v-model="text.scale"
-        :min="0.2"
-        :max="5"
-        :step="0.1"
-        @change="commit()"
-      >
+      <ElInputNumber v-model="text.scale" :min="0.2" :max="5" :step="0.1" @change="commit()">
       </ElInputNumber>
     </ElRow>
   </div>
@@ -38,7 +28,7 @@ const commit = () => {
 .header-text {
   user-select: none;
   font-size: larger;
-  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
-    'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva,
+    Verdana, sans-serif;
 }
 </style>

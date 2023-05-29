@@ -20,13 +20,7 @@ import Editor from './Editor.vue';
 import { computed, ref } from 'vue';
 import { getFiles, deleteFile } from '@/util/database';
 import { getReadableDate, getReadableFilename } from '@/util/readable';
-import {
-  DocumentAdd,
-  Download,
-  Sunny,
-  Moon,
-  Close,
-} from '@element-plus/icons-vue';
+import { DocumentAdd, Download, Sunny, Moon, Close } from '@element-plus/icons-vue';
 import { getBlankDiagramStorage } from '@/util/SeqLogic';
 import { dialog, path, fs, clipboard } from '@tauri-apps/api';
 import { websiteName } from '@/util/websiteName';
@@ -78,15 +72,11 @@ const onNewFile = async () => {
   await onOpen(filePath);
 };
 const onDelete = async (pathname: string) => {
-  ElMessageBox.confirm(
-    'Are you sure to remove this project from the list?',
-    'Warning',
-    {
-      confirmButtonText: 'OK',
-      cancelButtonText: 'Cancel',
-      type: 'warning',
-    }
-  )
+  ElMessageBox.confirm('Are you sure to remove this project from the list?', 'Warning', {
+    confirmButtonText: 'OK',
+    cancelButtonText: 'Cancel',
+    type: 'warning',
+  })
     .then(async () => {
       await deleteFile(pathname);
       await fetchFiles();
@@ -97,15 +87,13 @@ const copyPathname = (pathname: string) => {
   clipboard.writeText(pathname);
   ElMessage.success('Path copied to clipboard');
 };
-useEventListener(window, 'contextmenu', e => {
+useEventListener(window, 'contextmenu', (e) => {
   e.preventDefault();
 });
 const readableFilenameRefs = computed(() =>
-  files.value.map(file => promiseRef(getReadableFilename(file.pathname)))
+  files.value.map((file) => promiseRef(getReadableFilename(file.pathname)))
 );
-const readableFilenames = computed(() =>
-  readableFilenameRefs.value.map(ref => ref.value)
-);
+const readableFilenames = computed(() => readableFilenameRefs.value.map((ref) => ref.value));
 </script>
 <template>
   <ElContainer class="root" v-if="pathname === undefined">
@@ -113,9 +101,7 @@ const readableFilenames = computed(() =>
       <LRMenu>
         <span class="header-text">Project List</span>
         <template #end>
-          <div v-if="!dark" style="font-size: smaller">
-            (We prefer Dark Mode)
-          </div>
+          <div v-if="!dark" style="font-size: smaller">(We prefer Dark Mode)</div>
           <ElSwitch
             v-model="dark"
             inline-prompt
@@ -170,15 +156,8 @@ const readableFilenames = computed(() =>
                   </p>
                 </div>
                 <ElRow :align="'middle'">
-                  <span class="header-text">{{
-                    getReadableDate(file.updatedTime)
-                  }}</span>
-                  <ElButton
-                    :text="true"
-                    :icon="Close"
-                    @click="onDelete(file.pathname)"
-                  >
-                  </ElButton>
+                  <span class="header-text">{{ getReadableDate(file.updatedTime) }}</span>
+                  <ElButton :text="true" :icon="Close" @click="onDelete(file.pathname)"> </ElButton>
                 </ElRow>
               </ElRow>
             </ElCard>
@@ -227,7 +206,7 @@ const readableFilenames = computed(() =>
   color: var(--color-heading);
   user-select: none;
   font-size: larger;
-  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
-    'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva,
+    Verdana, sans-serif;
 }
 </style>

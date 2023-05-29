@@ -6,7 +6,6 @@ import {
   ElButton,
   ElMessageBox,
   ElFooter,
-  ElRow,
   ElMessage,
   ElDropdown,
   ElDropdownItem,
@@ -21,13 +20,9 @@ import { Diagram } from '@/util/SeqLogic';
 import { promiseRef } from '@/util/promiseRef';
 import { getReadableFilename } from '@/util/readable';
 import { computed, ref } from 'vue';
-import { clipboard } from '@tauri-apps/api';
+import { clipboard, os } from '@tauri-apps/api';
 import { getPopularUnits, getUnit } from '@/util/SeqLogic/units';
-import {
-  useEventListener,
-  useIntervalFn,
-  useMouseInElement,
-} from '@vueuse/core';
+import { computedAsync, useEventListener, useIntervalFn, useMouseInElement } from '@vueuse/core';
 import Node from './diagram-view/Node.vue';
 import { isDiagramStorage } from '@/util/SeqLogic';
 import Wire from './diagram-view/Wire.vue';
@@ -37,9 +32,9 @@ import EditNode from '@/view/editor-dialog/EditNode.vue';
 import EditWire from '@/view/editor-dialog/EditWire.vue';
 import EditText from '@/view/editor-dialog/EditText.vue';
 import HelpDialog from './editor-dialog/HelpDialog.vue';
-import { add } from 'lodash';
 import UnitsDialog from './editor-dialog/UnitsDialog.vue';
 resetStartTimestamp();
+const version = computedAsync(async () => await os.version(), '<unknown>');
 const props = defineProps<{
   /**
    * The pathname of the file being edited.
@@ -155,9 +150,7 @@ const clearSelectedItems = () => {
 };
 const selectedItemCount = computed(() => {
   return (
-    selectedItems.value.nodes.size +
-    selectedItems.value.wires.size +
-    selectedItems.value.texts.size
+    selectedItems.value.nodes.size + selectedItems.value.wires.size + selectedItems.value.texts.size
   );
 });
 const hasSelectedItems = computed(() => {
@@ -186,10 +179,7 @@ const onRedo = () => {
 };
 const onCopy = async () => {
   if (diagram.value) {
-    const storage = diagram.value.extract(
-      selectedItems.value.nodes,
-      selectedItems.value.texts
-    );
+    const storage = diagram.value.extract(selectedItems.value.nodes, selectedItems.value.texts);
     await clipboard.writeText(JSON.stringify(storage));
   }
 };
@@ -199,15 +189,14 @@ const onAddUnit = async (name: string) => {
 };
 const onPaste = async () => {
   if (diagram.value) {
-    clipboard.readText().then(text => {
+    clipboard.readText().then((text) => {
       try {
         if (!text) {
           throw new Error('Clipboard is empty');
         }
         const storage = JSON.parse(text);
         if (isDiagramStorage(storage)) {
-          selectedItems.value =
-            diagram.value?.merge(storage) ?? selectedItems.value;
+          selectedItems.value = diagram.value?.merge(storage) ?? selectedItems.value;
         }
       } catch (e) {
         console.error(e);
@@ -287,10 +276,7 @@ const getNodeAtMouse = () => {
   // should not be the node being added
   let result = undefined as string | undefined;
   for (const [id, node] of diagram.value.nodes.entries()) {
-    const [dx, dy] = [
-      node.x - mouseInView.value.x,
-      node.y - mouseInView.value.y,
-    ];
+    const [dx, dy] = [node.x - mouseInView.value.x, node.y - mouseInView.value.y];
     if (id == addingNode.value) {
       continue;
     }
@@ -384,13 +370,13 @@ const onDelete = () => {
     ElMessage.error('Cannot delete while editing');
     return;
   }
-  selectedItems.value.wires.forEach(id => {
+  selectedItems.value.wires.forEach((id) => {
     diagram.value?.removeWire(id);
   });
-  selectedItems.value.nodes.forEach(id => {
+  selectedItems.value.nodes.forEach((id) => {
     diagram.value?.removeNode(id);
   });
-  selectedItems.value.texts.forEach(id => {
+  selectedItems.value.texts.forEach((id) => {
     diagram.value?.removeText(id);
   });
   diagram.value?.removeInvalidWires();
@@ -429,10 +415,7 @@ const onKeyUp = (e: KeyboardEvent) => {
       onSelectAll();
     }
   } else if (!e.shiftKey) {
-    if (
-      editorStatus.value === 'idle' ||
-      editorStatus.value.startsWith('add-')
-    ) {
+    if (editorStatus.value === 'idle' || editorStatus.value.startsWith('add-')) {
       if (e.key === 'a') {
         onAddNode();
       } else if (e.key === 'w') {
@@ -491,11 +474,7 @@ interface MousePath {
 }
 const mousePath = ref<MousePath>();
 const blockContentMenu = ref(false);
-const onMouseDown = (
-  e: MouseEvent,
-  itemType: ItemType | 'blank',
-  id: string
-) => {
+const onMouseDown = (e: MouseEvent, itemType: ItemType | 'blank', id: string) => {
   e.stopPropagation();
   if (editorStatus.value === 'idle') {
     mousePath.value = {
@@ -540,10 +519,7 @@ const onMouseDown = (
 const onMouseUp = (_e: MouseEvent) => {
   if (mousePath.value !== undefined) {
     if (!diagram.value) return;
-    if (
-      mousePath.value.mode === 'box-select' ||
-      mousePath.value.mode === 'box-toggle-select'
-    ) {
+    if (mousePath.value.mode === 'box-select' || mousePath.value.mode === 'box-toggle-select') {
       const [left, top] = [
         Math.min(mousePath.value.x, mouseInView.value.x),
         Math.min(mousePath.value.y, mouseInView.value.y),
@@ -559,10 +535,7 @@ const onMouseUp = (_e: MouseEvent) => {
       }
       for (const [id, node] of diagram.value.nodes.entries()) {
         if (inRange(node.x, node.y)) {
-          if (
-            mousePath.value.mode === 'box-toggle-select' &&
-            selectedItems.value.nodes.has(id)
-          ) {
+          if (mousePath.value.mode === 'box-toggle-select' && selectedItems.value.nodes.has(id)) {
             selectedItems.value.nodes.delete(id);
           } else {
             selectedItems.value.nodes.add(id);
@@ -571,10 +544,7 @@ const onMouseUp = (_e: MouseEvent) => {
       }
       for (const [id, text] of diagram.value.texts.entries()) {
         if (inRange(text.x, text.y)) {
-          if (
-            mousePath.value.mode === 'box-toggle-select' &&
-            selectedItems.value.texts.has(id)
-          ) {
+          if (mousePath.value.mode === 'box-toggle-select' && selectedItems.value.texts.has(id)) {
             selectedItems.value.texts.delete(id);
           } else {
             selectedItems.value.texts.add(id);
@@ -680,19 +650,19 @@ const onContextMenu = (e: MouseEvent, itemType: ItemType, id: string) => {
 };
 const editNodeDialog = computed({
   get: () => editorStatus.value === 'edit-node',
-  set: v => {
+  set: (v) => {
     if (!v) onEscape();
   },
 });
 const editWireDialog = computed({
   get: () => editorStatus.value === 'edit-wire',
-  set: v => {
+  set: (v) => {
     if (!v) onEscape();
   },
 });
 const editTextDialog = computed({
   get: () => editorStatus.value === 'edit-text',
-  set: v => {
+  set: (v) => {
     if (!v) onEscape();
   },
 });
@@ -706,19 +676,19 @@ const onAbout = () => {
 };
 const helpDialog = computed({
   get: () => editorStatus.value === 'docs-help',
-  set: v => {
+  set: (v) => {
     if (!v) onEscape();
   },
 });
 const aboutDialog = computed({
   get: () => editorStatus.value === 'docs-about',
-  set: v => {
+  set: (v) => {
     if (!v) onEscape();
   },
 });
 const unitsDialog = computed({
   get: () => editorStatus.value === 'docs-units',
-  set: v => {
+  set: (v) => {
     if (!v) onEscape();
   },
 });
@@ -746,16 +716,11 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
             </ElLink>
             <template #dropdown>
               <div class="header-text">
-                <ElDropdownItem
-                  v-for="name of getPopularUnits()"
-                  @click="onAddUnit(name)"
-                >
+                <ElDropdownItem v-for="name of getPopularUnits()" @click="onAddUnit(name)">
                   {{ name }}
                 </ElDropdownItem>
                 <ElDivider></ElDivider>
-                <ElDropdownItem @click="onShowUnits()">
-                  Show More
-                </ElDropdownItem>
+                <ElDropdownItem @click="onShowUnits()"> Show More </ElDropdownItem>
               </div>
             </template>
           </ElDropdown>
@@ -766,29 +731,17 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
             </ElLink>
             <template #dropdown>
               <div class="header-text">
-                <ElDropdownItem @click="onAddNode()">
-                  Add Node (A)
-                </ElDropdownItem>
+                <ElDropdownItem @click="onAddNode()"> Add Node (A) </ElDropdownItem>
                 <ElDropdownItem
-                  :style="
-                    selectedItems.nodes.size
-                      ? {}
-                      : { color: 'var(--el-color-info)' }
-                  "
+                  :style="selectedItems.nodes.size ? {} : { color: 'var(--el-color-info)' }"
                   @click="onAddWire()"
                 >
                   Add Wire (W)
                 </ElDropdownItem>
-                <ElDropdownItem @click="onAddText()">
-                  Add Text (T)
-                </ElDropdownItem>
+                <ElDropdownItem @click="onAddText()"> Add Text (T) </ElDropdownItem>
                 <ElDivider></ElDivider>
                 <ElDropdownItem
-                  :style="
-                    editorStatus !== 'idle'
-                      ? {}
-                      : { color: 'var(--el-color-info)' }
-                  "
+                  :style="editorStatus !== 'idle' ? {} : { color: 'var(--el-color-info)' }"
                   @click="onEscape()"
                 >
                   Stop (Esc)
@@ -813,33 +766,19 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
             </ElLink>
             <template #dropdown>
               <div class="header-text">
-                <ElDropdownItem @click="onUndo()">
-                  Undo (Ctrl+Z)
-                </ElDropdownItem>
-                <ElDropdownItem @click="onRedo()">
-                  Redo (Ctrl+Y)
-                </ElDropdownItem>
+                <ElDropdownItem @click="onUndo()"> Undo (Ctrl+Z) </ElDropdownItem>
+                <ElDropdownItem @click="onRedo()"> Redo (Ctrl+Y) </ElDropdownItem>
                 <ElDropdownItem
-                  :style="
-                    hasSelectedItems ? {} : { color: 'var(--el-color-info)' }
-                  "
+                  :style="hasSelectedItems ? {} : { color: 'var(--el-color-info)' }"
                   @click="onCopy()"
                 >
                   Copy (Ctrl+C)
                 </ElDropdownItem>
-                <ElDropdownItem @click="onPaste()">
-                  Paste (Ctrl+V)
-                </ElDropdownItem>
+                <ElDropdownItem @click="onPaste()"> Paste (Ctrl+V) </ElDropdownItem>
                 <ElDivider></ElDivider>
-                <ElDropdownItem @click="onResetViewport()">
-                  Reset Viewport
-                </ElDropdownItem>
-                <ElDropdownItem @click="onResetTime()">
-                  Reset Time
-                </ElDropdownItem>
-                <ElDropdownItem @click="onSave()">
-                  Force Save (Ctrl+S)
-                </ElDropdownItem>
+                <ElDropdownItem @click="onResetViewport()"> Reset Viewport </ElDropdownItem>
+                <ElDropdownItem @click="onResetTime()"> Reset Time </ElDropdownItem>
+                <ElDropdownItem @click="onSave()"> Force Save (Ctrl+S) </ElDropdownItem>
               </div>
             </template>
           </ElDropdown>
@@ -865,10 +804,10 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
             class="full-height full-width"
             ref="svgRef"
             v-if="diagram !== undefined"
-            @mousemove="e => onMove(e)"
-            @wheel="e => onWheel(e)"
-            @mousedown="e => onMouseDown(e, 'blank', '')"
-            @mouseup="e => onMouseUp(e)"
+            @mousemove="(e) => onMove(e)"
+            @wheel="(e) => onWheel(e)"
+            @mousedown="(e) => onMouseDown(e, 'blank', '')"
+            @mouseup="(e) => onMouseUp(e)"
           >
             <g
               :transform="`scale(${diagram?.viewport.scale}), translate(${diagram?.viewport.x}, ${diagram?.viewport.y})`"
@@ -883,8 +822,9 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
               </g>
               <g
                 v-for="[id, wire] of diagram.wires.entries()"
-                @mousedown="e => onMouseDown(e, 'wire', id)"
-                @contextmenu="e => onContextMenu(e, 'wire', id)"
+                @mousedown="(e) => onMouseDown(e, 'wire', id)"
+                @contextmenu="(e) => onContextMenu(e, 'wire', id)"
+                :key="id"
               >
                 <Wire
                   :wire="wire"
@@ -908,8 +848,9 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
               </g>
               <g
                 v-for="[id, node] of diagram.nodes.entries()"
-                @mousedown="e => onMouseDown(e, 'node', id)"
-                @contextmenu="e => onContextMenu(e, 'node', id)"
+                @mousedown="(e) => onMouseDown(e, 'node', id)"
+                @contextmenu="(e) => onContextMenu(e, 'node', id)"
+                :key="id"
               >
                 <Node
                   :node="node"
@@ -919,20 +860,13 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
               </g>
               <g
                 v-for="[id, text] of diagram.texts.entries()"
-                @mousedown="e => onMouseDown(e, 'text', id)"
-                @contextmenu="e => onContextMenu(e, 'text', id)"
+                @mousedown="(e) => onMouseDown(e, 'text', id)"
+                @contextmenu="(e) => onContextMenu(e, 'text', id)"
+                :key="id"
               >
-                <TextView
-                  :text="text"
-                  :selected="selectedItems.texts.has(id)"
-                />
+                <TextView :text="text" :selected="selectedItems.texts.has(id)" />
               </g>
-              <g
-                v-if="
-                  mousePath?.mode == 'box-select' ||
-                  mousePath?.mode == 'box-toggle-select'
-                "
-              >
+              <g v-if="mousePath?.mode == 'box-select' || mousePath?.mode == 'box-toggle-select'">
                 <rect
                   :x="Math.min(mousePath.x, mouseInView.x)"
                   :y="Math.min(mousePath.y, mouseInView.y)"
@@ -952,11 +886,7 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
             <div class="margin-in-line" :title="'Status'">
               {{ editorStatus }}
             </div>
-            <div
-              class="margin-in-line"
-              :title="'Viewport'"
-              v-if="diagram !== undefined"
-            >
+            <div class="margin-in-line" :title="'Viewport'" v-if="diagram !== undefined">
               {{
                 `${diagram.viewport.x.toFixed(2)}:${diagram.viewport.y.toFixed(
                   2
@@ -1009,13 +939,13 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
   <ElDialog v-model="aboutDialog" :title="'About'">
     <div>Seq Logic</div>
     <div>Author: 严一涵等3人</div>
-    <div>Version: v1.1.3</div>
+    <div>Version: {{ version }}</div>
   </ElDialog>
   <ElDialog v-model="unitsDialog" :title="'Units'">
     <UnitsDialog
       v-if="unitsDialog"
       @add="
-        name => {
+        (name) => {
           unitsDialog = false;
           onAddUnit(name);
         }
@@ -1046,8 +976,8 @@ const readableName = promiseRef(getReadableFilename(props.pathname));
 .header-text {
   user-select: none;
   font-size: larger;
-  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
-    'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva,
+    Verdana, sans-serif;
 }
 .editor-footer {
   background-color: var(--color-background-soft);

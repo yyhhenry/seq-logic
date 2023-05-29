@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { getUnits } from '@/util/SeqLogic/units';
 import { promiseRef } from '@/util/promiseRef';
-import {
-  ElTabs,
-  ElTabPane,
-  ElInput,
-  ElCard,
-  ElRow,
-  ElScrollbar,
-} from 'element-plus';
+import { ElTabs, ElTabPane, ElInput, ElCard, ElRow, ElScrollbar } from 'element-plus';
 import { computed, ref } from 'vue';
 defineEmits<{
   (event: 'add', name: string): void;
@@ -18,9 +11,7 @@ const allUnits = promiseRef(getUnits(), []);
 const units = computed(() =>
   text.value == ''
     ? allUnits.value
-    : allUnits.value.filter(unit =>
-        unit.toLowerCase().includes(text.value.toLowerCase())
-      )
+    : allUnits.value.filter((unit) => unit.toLowerCase().includes(text.value.toLowerCase()))
 );
 </script>
 <template>

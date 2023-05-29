@@ -2,22 +2,18 @@ import { fs, path } from '@tauri-apps/api';
 import { getReadableFilename } from '../readable';
 import { loadDiagramStorageFile } from '.';
 export async function getUnitsFolder() {
-    return await path.resolveResource('units');
+  return await path.resolveResource('units');
 }
 export async function getUnits() {
-    const folder = await getUnitsFolder();
-    return await Promise.all(
-        (
-            await fs.readDir(folder)
-        ).map(async file => await getReadableFilename(file.path))
-    );
+  const folder = await getUnitsFolder();
+  return await Promise.all(
+    (await fs.readDir(folder)).map(async (file) => await getReadableFilename(file.path))
+  );
 }
 export function getPopularUnits() {
-    return ['and', 'or', 'xor', 'd-latch'];
+  return ['and', 'or', 'xor', 'd-latch'];
 }
 export async function getUnit(name: string) {
-    const folder = await getUnitsFolder();
-    return await loadDiagramStorageFile(
-        await path.join(folder, `${name}.seq.json`)
-    );
+  const folder = await getUnitsFolder();
+  return await loadDiagramStorageFile(await path.join(folder, `${name}.seq.json`));
 }

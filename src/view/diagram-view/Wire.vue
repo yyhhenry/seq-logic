@@ -9,9 +9,7 @@ const props = defineProps<{
   selected: boolean;
 }>();
 const startPart = computed(() => props.startStatus.active);
-const endPart = computed(() =>
-  props.wire.not ? !startPart.value : startPart.value
-);
+const endPart = computed(() => (props.wire.not ? !startPart.value : startPart.value));
 const mid = computed(() => ({
   x: (props.start.x + props.end.x) / 2,
   y: (props.start.y + props.end.y) / 2,
@@ -26,14 +24,13 @@ const angle = computed(() => {
 const gateRadius = 8;
 const angleOffset = [0, (-2 / 3) * Math.PI, (2 / 3) * Math.PI];
 const positions = computed(() =>
-  angleOffset.map(offset => ({
+  angleOffset.map((offset) => ({
     x: mid.value.x + gateRadius * Math.cos(angle.value + offset),
     y: mid.value.y + gateRadius * Math.sin(angle.value + offset),
   }))
 );
 const gate = computed(() => {
-  const toStr = (i: number) =>
-    `${positions.value[i].x} ${positions.value[i].y}`;
+  const toStr = (i: number) => `${positions.value[i].x} ${positions.value[i].y}`;
   return `M ${toStr(0)} L ${toStr(1)} L ${toStr(2)} Z`;
 });
 </script>
