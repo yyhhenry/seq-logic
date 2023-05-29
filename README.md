@@ -1,4 +1,8 @@
-# SeqLogic v1.1.4
+# SeqLogic v1.1.5
+
+## Version 1.1.5 (release)
+
+- 1.1.4 紧急更新的后续补丁版本
 
 ## Version 1.1.4 (bugfix)
 
